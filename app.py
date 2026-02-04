@@ -74,12 +74,10 @@ def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     try:
-        # 1. Try loading from Secrets (Online)
-        creds_dict = dict(st.secrets["gcp_service_account"])
-        
-        # --- THE FIX IS HERE ---
-        # We force python to turn "\\n" into actual new lines
-        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        # 1. Try loading from Secrets (The "Big Block" Method)
+        # We read the raw JSON string and convert it to a dictionary
+        json_str = st.secrets["gcp_service_account"]["service_account_json"]
+        creds_dict = json.loads(json_str)
         
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     except:
@@ -91,8 +89,9 @@ def connect_to_gsheets():
 
     client = gspread.authorize(creds)
     
-    # --- IMPORTANT: YOUR SHEET ID ---
-    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" # <--- I updated this with the ID from your screenshot!
+    # --- YOUR SHEET ID ---
+    # I copied this from your screenshot url!
+    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" 
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -253,4 +252,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
