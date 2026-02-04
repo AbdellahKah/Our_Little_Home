@@ -4,17 +4,21 @@ import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import json
+import time
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 
-# --- FANCY CSS OVERHAUL ---
+# --- PASSWORD CONFIGURATION ---
+SECRET_PASSWORD = "1808"
+
+# --- FANCY CSS OVERHAUL (NUCLEAR FIX v2) ---
 st.markdown("""
     <style>
     /* 1. IMPORT FONTS */
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
 
-    /* 2. ANIMATED BACKGROUND */
+    /* 2. BACKGROUND */
     .stApp {
         background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
         background-size: 400% 400%;
@@ -27,88 +31,115 @@ st.markdown("""
         100% { background-position: 0% 50%; }
     }
 
-    /* 3. HEADERS & TEXT */
-    h1, h2, h3 {
+    /* 3. HEADERS */
+    h1 {
         font-family: 'Pacifico', cursive;
+        font-size: 3rem !important;
         color: #5A189A !important;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        text-shadow: 2px 2px 4px rgba(255,255,255,0.4);
         font-weight: normal;
+        margin-bottom: 0px;
+    }
+    h3 {
+        font-family: 'Nunito', sans-serif;
+        color: #5A189A !important;
+        font-weight: 700;
     }
     p, label, span, div {
         color: #4a4a4a;
     }
 
-    /* 4. GLASSMORPHISM CARDS */
+    /* 4. GLASS CARDS */
     .glass-card {
-        background: rgba(255, 255, 255, 0.65);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 20px;
-        margin-bottom: 15px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        transition: transform 0.2s;
-    }
-    .glass-card:hover {
-        transform: translateY(-2px);
-    }
-
-    /* 5. CUSTOM TABS */
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: rgba(255,255,255,0.5);
-        border-radius: 30px;
-        padding: 5px;
-        gap: 5px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 45px;
+        background: rgba(255, 255, 255, 0.5); 
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border-radius: 25px;
-        background-color: transparent;
-        color: #5A189A;
-        font-weight: 700;
-        border: none;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
     }
-    .stTabs [aria-selected="true"] {
-        background-color: #fff !important;
-        color: #FF69B4 !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    
+    /* 5. FORCE WHITE INPUTS (NUCLEAR STYLE) */
+    div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg {
+        background-color: white !important;
+        border: 2px solid rgba(255,255,255,0.8) !important;
+        border-radius: 12px !important;
+        color: #5A189A !important;
+    }
+    div[data-baseweb="input"] {
+        background-color: white !important;
+        border-radius: 12px !important;
+    }
+    div[data-baseweb="select"] > div {
+        background-color: white !important;
+        color: #5A189A !important;
+        border-radius: 12px !important;
+    }
+    div[data-baseweb="select"] span {
+        color: #5A189A !important;
+    }
+    /* Fix Expander Header */
+    .streamlit-expanderHeader {
+        background-color: rgba(255,255,255,0.6) !important;
+        color: #5A189A !important;
+        border-radius: 12px !important;
     }
 
-    /* 6. BUTTONS & INPUTS */
+    /* 6. BUTTONS */
     div.stButton > button {
-        background: linear-gradient(90deg, #FF69B4, #DA70D6);
-        color: white;
-        border: none;
+        background: linear-gradient(90deg, #FF69B4, #DA70D6) !important;
+        color: white !important;
+        border: none !important;
         border-radius: 25px;
         height: 50px;
         font-size: 18px;
         font-weight: bold;
         box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
         width: 100%;
-        transition: 0.3s;
+        transition: 0.2s;
     }
     div.stButton > button:hover {
         transform: scale(1.02);
-        box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+    }
+
+    /* 7. TABS */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: rgba(255,255,255,0.4);
+        border-radius: 50px;
+        padding: 8px;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        border-radius: 40px;
+        background-color: transparent;
+        color: #5A189A;
+        font-weight: 700;
+        border: none;
+        flex-grow: 1;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #fff !important;
+        color: #FF69B4 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     }
     
-    /* Remove default Streamlit header stuff */
     header {visibility: hidden;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    
     </style>
 """, unsafe_allow_html=True)
 
-# --- GOOGLE SHEETS CONNECTION ---
+# --- GOOGLE SHEETS CONNECTION (DEBUG MODE) ---
 @st.cache_resource
 def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     try:
-        # Load from Secrets (Clean Logic)
         creds_dict = dict(st.secrets["gcp_service_account"])
-        # Fix formatting issues automatically
+        # Formatting Fixer
         if "private_key" in creds_dict:
             key = creds_dict["private_key"]
             key = key.replace("\\n", "\n").replace('"', '')
@@ -119,24 +150,21 @@ def connect_to_gsheets():
             creds_dict["private_key"] = key
         
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    except:
-        try:
-            creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-        except:
-            return None 
+    except Exception as e:
+        return f"Secret Error: {e}"
 
     client = gspread.authorize(creds)
     
-    # --- ⚠️ PASTE YOUR SHEET ID HERE ⚠️ ---
-    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ" 
+    # --- YOUR SHEET ID ---
+    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" 
     
     try:
         sheet = client.open_by_key(SHEET_ID)
         return sheet
     except Exception as e:
-        return f"Error: {e}"
+        return f"Sheet Error: {e}"
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS (WITH ERROR MESSAGES) ---
 def get_data(worksheet_name):
     sheet = connect_to_gsheets()
     if not sheet or isinstance(sheet, str): return pd.DataFrame()
@@ -149,52 +177,86 @@ def get_data(worksheet_name):
 
 def add_row(worksheet_name, row_data):
     sheet = connect_to_gsheets()
-    if sheet and not isinstance(sheet, str):
+    
+    # 1. Check Connection
+    if not sheet:
+        st.error("❌ Database Disconnected. Please refresh the app.")
+        return
+    if isinstance(sheet, str):
+        st.error(f"❌ Connection Error: {sheet}")
+        return
+
+    # 2. Try to Save
+    try:
         ws = sheet.worksheet(worksheet_name)
         ws.append_row(row_data)
+        st.toast("Saved Successfully! 💾", icon="✅")
+        time.sleep(1) # Wait so user sees the success
+    except gspread.WorksheetNotFound:
+        st.error(f"❌ Error: Tab '{worksheet_name}' not found. Please rename tabs in Google Sheets to: Schedule, Tasks, Notes.")
+    except Exception as e:
+        st.error(f"❌ Error saving data: {e}")
 
 def delete_row_by_index(worksheet_name, index):
     sheet = connect_to_gsheets()
     if sheet and not isinstance(sheet, str):
-        ws = sheet.worksheet(worksheet_name)
-        all_rows = ws.get_all_values()
-        if index + 1 < len(all_rows):
-            del all_rows[index + 1]
-            ws.clear()
-            ws.update(all_rows)
+        try:
+            ws = sheet.worksheet(worksheet_name)
+            all_rows = ws.get_all_values()
+            if index + 1 < len(all_rows):
+                del all_rows[index + 1]
+                ws.clear()
+                ws.update(all_rows)
+        except:
+            pass
 
-# --- MAIN APP LOGIC ---
-def main():
-    # Header Section
-    st.markdown("<h1 style='text-align: center; margin-bottom: 5px;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
+# --- LOGIN SCREEN ---
+def login_screen():
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center;'>Knock Knock! 🚪</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>This is our private little space.</p>", unsafe_allow_html=True)
     
-    # User Toggle (Styled with columns for centering)
-    c1, c2, c3 = st.columns([1,2,1])
+    st.write("") 
+    c1, c2, c3 = st.columns([1, 2, 1]) 
     with c2:
-        user = st.radio("Identity", ["🤴 Husband", "👸 Wife"], horizontal=True, label_visibility="collapsed")
-    
-    st.write("") # Spacer
+        password = st.text_input("Enter the Secret Key:", type="password", placeholder="Shhh...")
+        st.write("") 
+        if st.button("Open Door 🔑", use_container_width=True):
+            if password == SECRET_PASSWORD:
+                st.session_state.authenticated = True
+                st.balloons()
+                st.rerun()
+            else:
+                st.error("Wrong key! Are you a stranger? 😜")
 
-    # Tabs
+# --- MAIN APP ---
+def main_app():
+    st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
+    
+    c1, c2, c3 = st.columns([1, 4, 1])
+    with c2:
+        user = st.radio("Who are you?", ["🤴 Husband", "👸 Wife"], horizontal=True, label_visibility="collapsed")
+    
+    st.write("") 
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
     # --- TAB 1: SCHEDULE ---
     with tab1:
-        # Input Form inside a Glass Card
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        with st.expander("➕ Plan a Date", expanded=False):
+        with st.expander("➕ Plan a New Date", expanded=False):
             with st.form("new_event"):
                 c1, c2 = st.columns(2)
                 with c1: event_date = st.date_input("When?")
                 with c2: event_time = st.time_input("Time", value=None)
-                event_name = st.text_input("What are we doing?")
+                event_name = st.text_input("What is the plan?")
+                
+                st.write("") 
                 if st.form_submit_button("Save to Calendar"):
                     time_str = event_time.strftime("%H:%M") if event_time else "All Day"
                     add_row("Schedule", [str(event_date), time_str, event_name, user])
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # Display Events
         df_sched = get_data("Schedule")
         if not df_sched.empty:
             df_sched['Date'] = pd.to_datetime(df_sched['Date'])
@@ -202,31 +264,35 @@ def main():
             df_sched['Month'] = df_sched['Date'].dt.strftime('%B')
             
             for month, group in df_sched.groupby('Month', sort=False):
-                st.markdown(f"<h3 style='margin-top:20px;'>{month}</h3>", unsafe_allow_html=True)
+                st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
                 for i, row in group.iterrows():
                     date_pretty = row['Date'].strftime("%a %d")
-                    # Fancy Event Card
                     st.markdown(f"""
-                    <div class="glass-card" style="border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-size: 24px; font-weight: bold; color: #5A189A;">{date_pretty}</div>
-                            <div style="font-size: 14px; color: #888;">⏰ {row['Time']}</div>
+                    <div class="glass-card" style="border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div style="flex-grow: 1;">
+                            <div style="font-size: 20px; font-weight: bold; color: #5A189A;">{row['Event']}</div>
+                            <div style="font-size: 14px; color: #666;">⏰ {row['Time']} • {date_pretty}</div>
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 18px; font-weight: 600;">{row['Event']}</div>
-                            <div style="font-size: 12px; color: #aaa;">Added by {row['Identity']}</div>
+                        <div style="text-align: right; min-width: 60px;">
+                             <div style="font-size: 24px;">{ '🤴' if 'Husband' in row['Identity'] else '👸' }</div>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
         else:
-            st.info("Calendar is empty! Let's plan something. ✈️")
+            st.markdown("""
+            <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                <div style="font-size: 60px;">✈️</div>
+                <h3>Nothing planned yet!</h3>
+                <p>Click the <b>+</b> above to add a date.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
     # --- TAB 2: TASKS ---
     with tab2:
-        # Input
-        st.markdown('<div class="glass-card" style="padding: 10px;">', unsafe_allow_html=True)
-        c1, c2 = st.columns([3, 1])
-        with c1: new_task = st.text_input("Task", placeholder="Add a new task...", label_visibility="collapsed")
+        st.markdown('<div class="glass-card" style="padding: 15px;">', unsafe_allow_html=True)
+        c1, c2 = st.columns([4, 1])
+        with c1: 
+            new_task = st.text_input("Task", placeholder="Add a new task...", label_visibility="collapsed")
         with c2: 
             if st.button("Add"):
                 if new_task:
@@ -234,16 +300,15 @@ def main():
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Display Tasks
         df_tasks = get_data("Tasks")
         if not df_tasks.empty:
             for i, row in df_tasks.iterrows():
                 is_done = row['Status'] == "Done"
-                opacity = "0.5" if is_done else "1.0"
+                opacity = "0.6" if is_done else "1.0"
                 decoration = "line-through" if is_done else "none"
                 icon = "✅" if is_done else "⬜"
+                bg_color = "rgba(255,255,255,0.4)" if is_done else "rgba(255,255,255,0.7)"
                 
-                # Custom HTML Task Row
                 col_btn, col_txt = st.columns([1, 5])
                 with col_btn:
                     if st.button(icon, key=f"t_{i}"):
@@ -254,16 +319,21 @@ def main():
                 
                 with col_txt:
                     st.markdown(f"""
-                    <div class="glass-card" style="margin-bottom: 0px; padding: 12px; opacity: {opacity}; text-decoration: {decoration};">
-                        <b>{row['Task']}</b>
+                    <div style="background: {bg_color}; border-radius: 15px; padding: 12px; margin-bottom: 5px; opacity: {opacity}; text-decoration: {decoration}; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <span style="font-size: 16px; color: #333; font-weight: 600;">{row['Task']}</span>
                     </div>
                     """, unsafe_allow_html=True)
         else:
-             st.info("Nothing to do! Relax time. ☕")
+             st.markdown("""
+            <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                <div style="font-size: 60px;">☕</div>
+                <h3>All caught up!</h3>
+                <p>Relax time.</p>
+            </div>
+            """, unsafe_allow_html=True)
 
     # --- TAB 3: NOTES ---
     with tab3:
-        # Note Input
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
             note = st.text_area("Write a note...", placeholder="I love you because...", height=100)
@@ -272,25 +342,36 @@ def main():
                 st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Display Notes
         df_notes = get_data("Notes")
         if not df_notes.empty:
-            df_notes = df_notes.iloc[::-1] # Newest first
+            df_notes = df_notes.iloc[::-1]
             for i, row in df_notes.iterrows():
-                # Sticky Note Style
+                rotation = (i % 5) - 2 
                 st.markdown(f"""
-                <div class="glass-card" style="background: #fff9c4; transform: rotate({(i%3)-1}deg);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 5px; display: flex; justify-content: space-between;">
+                <div class="glass-card" style="background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">
                         <span>{row['Date']}</span>
                         <span><b>{row['Author']}</b></span>
                     </div>
-                    <div style="font-family: 'Indie Flower', cursive; font-size: 18px; color: #333;">
+                    <div style="font-family: 'Indie Flower', cursive; font-size: 18px; color: #333; line-height: 1.4;">
                         {row['Note']}
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("No notes yet. Be the first!")
+            st.markdown("""
+            <div style="text-align: center; padding: 40px; opacity: 0.7;">
+                <div style="font-size: 60px;">💌</div>
+                <h3>No notes yet.</h3>
+                <p>Be the first to write something sweet!</p>
+            </div>
+            """, unsafe_allow_html=True)
 
-if __name__ == "__main__":
-    main()
+# --- APP CONTROLLER ---
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    login_screen()
+else:
+    main_app()
