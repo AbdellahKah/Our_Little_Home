@@ -71,25 +71,28 @@ st.markdown("""
 # --- GOOGLE SHEETS CONNECTION ---
 @st.cache_resource
 def connect_to_gsheets():
-    # Load credentials
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     try:
-        # Try loading from Secrets (Online)
+        # 1. Try loading from Secrets (Online)
         creds_dict = dict(st.secrets["gcp_service_account"])
+        
+        # --- THE FIX IS HERE ---
+        # We force python to turn "\\n" into actual new lines
+        creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
+        
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     except:
-        # Try loading from local file (Laptop)
+        # 2. Try loading from local file (Laptop)
         try:
             creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
         except:
-            return None # Failed to find keys
+            return None 
 
     client = gspread.authorize(creds)
     
-    # --- IMPORTANT: PASTE YOUR SHEET ID HERE ---
-    # This is the long code in the URL of your Google Sheet
-    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ" 
+    # --- IMPORTANT: YOUR SHEET ID ---
+    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" # <--- I updated this with the ID from your screenshot!
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -250,3 +253,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
