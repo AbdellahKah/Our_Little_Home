@@ -12,11 +12,34 @@ st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="cent
 # --- PASSWORD ---
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Nuclear Fix) ---
+# --- FANCY CSS (Hearts & Flowers Edition) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
-    .stApp { background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb); background-size: 400% 400%; animation: gradient 15s ease infinite; font-family: 'Nunito', sans-serif; }
+
+    /* THE NEW BACKGROUND: Hearts + Flowers + Gradient */
+    .stApp {
+        /* Layer 1 (Top): Subtle White Hearts Pattern */
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 53.65L25.65 49.65C10.25 35.45 0 26.05 0 14.55C0 5.15 7.35 -2.2 16.75 -2.2C22.05 -2.2 27.15 4.7 30 10.65C32.85 4.7 37.95 -2.2 43.25 -2.2C52.65 -2.2 60 5.15 60 14.55C60 26.05 49.75 35.45 34.35 49.65L30 53.65Z' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E"),
+        /* Layer 2 (Middle): Subtle White Flowers Pattern */
+        url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M25 1C21.7 1 18.9 3.4 18.4 6.6C15.2 5.1 11.5 6.4 9.5 9.5C7.5 12.5 8 16.6 10.7 19.1C7.8 20.6 6.3 23.9 7.1 27.1C7.9 30.4 10.8 32.6 14.1 32.6C14.1 36.1 16.3 38.9 19.6 39.7C22.9 40.4 26.1 39 27.7 36.1C30.4 38.6 34.4 39.1 37.5 37.1C40.6 35.1 41.8 31.4 40.4 28.2C43.6 27.8 46 25 46 21.6C46 18.2 43.6 15.4 40.4 15C41.8 11.8 40.6 8.1 37.5 6.1C34.4 4.1 30.4 4.6 27.7 7.1C27.2 3.9 24.4 1 21.1 1L25 1Z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E"),
+        /* Layer 3 (Bottom): The Moving Gradient */
+        linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
+
+        /* Sizing and Positioning the layers */
+        background-size: 100px 100px, 80px 80px, 400% 400%;
+        background-position: 0 0, 40px 40px, 0% 50%;
+        
+        /* Animate only the gradient layer */
+        animation: gradient 15s ease infinite;
+        font-family: 'Nunito', sans-serif;
+    }
+    @keyframes gradient {
+        0% { background-position: 0 0, 40px 40px, 0% 50%; }
+        50% { background-position: 0 0, 40px 40px, 100% 50%; }
+        100% { background-position: 0 0, 40px 40px, 0% 50%; }
+    }
+
     h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
     h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
     .glass-card { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
@@ -33,8 +56,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- GOOGLE SHEETS CONNECTION (With Auto-Refresh) ---
-# ttl=60 means "refresh the connection every 60 seconds" to find new tabs
+# --- GOOGLE SHEETS CONNECTION ---
 @st.cache_resource(ttl=60)
 def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -56,8 +78,8 @@ def connect_to_gsheets():
             return None
 
     client = gspread.authorize(creds)
-    # THIS ID MUST MATCH YOUR BROWSER URL
-    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
+    # REMINDER: MAKE SURE THIS IS YOUR REAL ID
+    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -91,12 +113,9 @@ def add_row(worksheet_name, row_data):
         ws.append_row(row_data)
         return True
     except gspread.WorksheetNotFound:
-        # --- DEBUG MODE ---
-        # This will tell you EXACTLY what tabs the app sees
         try:
             existing_tabs = [ws.title for ws in sheet.worksheets()]
             st.error(f"❌ Error: Tab '{worksheet_name}' missing. I found these instead: {existing_tabs}")
-            st.info(f"💡 Tip: Do you see a space in the name? Like '{worksheet_name} '?")
         except:
              st.error(f"❌ Error: Tab '{worksheet_name}' not found.")
         return False
@@ -139,7 +158,7 @@ def main_app():
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
-        user = st.radio("Who are you?", ["🤴 Aboudii", "👸 Saratii"], horizontal=True, label_visibility="collapsed")
+        user = st.radio("Who are you?", ["🤴 Husband", "👸 Wife"], horizontal=True, label_visibility="collapsed")
     st.write("") 
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
@@ -246,5 +265,3 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
-
-
