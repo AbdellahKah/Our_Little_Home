@@ -57,7 +57,7 @@ def connect_to_gsheets():
 
     client = gspread.authorize(creds)
     # THIS ID MUST MATCH YOUR BROWSER URL
-    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -246,3 +246,4 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
+
