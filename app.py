@@ -69,74 +69,74 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- GOOGLE SHEETS CONNECTION ---
-# We use st.cache_resource so it doesn't reconnect every second
 @st.cache_resource
 def connect_to_gsheets():
-    # Load credentials from Streamlit Secrets (Best for deployment)
-    # OR from local file if running on laptop
+    # Load credentials
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     try:
-        # Try loading from Secrets (for Online App)
+        # Try loading from Secrets (Online)
         creds_dict = dict(st.secrets["gcp_service_account"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     except:
-        # Try loading from local file (for Laptop)
+        # Try loading from local file (Laptop)
         try:
             creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
         except:
-            return None # Failed to connect
+            return None # Failed to find keys
 
     client = gspread.authorize(creds)
-    # OPEN THE SHEET NAMED "OurHomeDB"
+    
+    # --- IMPORTANT: PASTE YOUR SHEET ID HERE ---
+    # This is the long code in the URL of your Google Sheet
+    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ" 
+    
     try:
-        sheet = client.open("OurHomeDB")
+        sheet = client.open_by_key(SHEET_ID)
         return sheet
-    except:
-        return "SheetNotFound"
+    except Exception as e:
+        return f"Error: {e}"
 
 # --- HELPER FUNCTIONS ---
 def get_data(worksheet_name):
     sheet = connect_to_gsheets()
-    if not sheet or sheet == "SheetNotFound": return pd.DataFrame()
+    if not sheet or isinstance(sheet, str): return pd.DataFrame() # Return empty if error
     try:
         ws = sheet.worksheet(worksheet_name)
         data = ws.get_all_records()
         return pd.DataFrame(data)
     except:
-        return pd.DataFrame() # Return empty if tab doesn't exist yet
+        return pd.DataFrame() 
 
 def add_row(worksheet_name, row_data):
     sheet = connect_to_gsheets()
-    if sheet and sheet != "SheetNotFound":
+    if sheet and not isinstance(sheet, str):
         ws = sheet.worksheet(worksheet_name)
         ws.append_row(row_data)
 
 def delete_row_by_index(worksheet_name, index):
     sheet = connect_to_gsheets()
-    if sheet:
+    if sheet and not isinstance(sheet, str):
         ws = sheet.worksheet(worksheet_name)
-        # Google Sheets is 1-indexed, and row 1 is headers, so +2 logic often applies
-        # But get_all_records returns dicts. Simple delete is tricky.
-        # Safe way: Delete based on a unique timestamp or just reload.
-        # For this simple app, we will simple re-write the whole dataframe minus that row.
-        # It's safer for small data.
         all_rows = ws.get_all_values()
-        del all_rows[index + 1] # +1 to skip header
-        ws.clear()
-        ws.update(all_rows)
+        if index + 1 < len(all_rows):
+            del all_rows[index + 1] # +1 to skip header
+            ws.clear()
+            ws.update(all_rows)
 
 # --- MAIN APP LOGIC ---
 def main():
     # Check Connection First
     sheet = connect_to_gsheets()
+    
     if not sheet:
-        st.error("⚠️ Setup Error: Could not find 'service_account.json'.")
-        st.info("Did you download the key from Google Cloud?")
+        st.error("⚠️ Key Error: Could not find 'service_account.json'.")
         st.stop()
-    elif sheet == "SheetNotFound":
-        st.error("⚠️ Setup Error: Could not find Google Sheet named 'OurHomeDB'.")
-        st.info("Did you create the sheet and share it with the bot email?")
+        
+    # Check if connection returned an error string
+    if isinstance(sheet, str):
+        st.error(f"⚠️ Connection Error: {sheet}")
+        st.info("Make sure you pasted the correct SHEET ID in the code (around line 80) and shared the sheet with the bot email.")
         st.stop()
 
     st.markdown("### 🏠 Our Forever Home")
@@ -186,11 +186,10 @@ def main():
                         <div style="font-size:12px; color:grey; text-align:right">Added by {row['Identity']}</div>
                     </div>
                     """, unsafe_allow_html=True)
-                    # Simple Delete Button (Optional - keeping UI clean)
         else:
             st.info("Calendar is empty. Plan something! ✈️")
 
-    # --- TAB 2: CORRESPONDING TASKS ---
+    # --- TAB 2: TASKS ---
     with tab2:
         st.caption("Things to do")
         
@@ -214,8 +213,6 @@ def main():
                 col_btn, col_txt = st.columns([1, 4])
                 with col_btn:
                     if st.button("✅" if is_done else "⬜", key=f"t_{i}"):
-                        # Toggle logic needs row update, for simplicity in this version, we usually delete/re-add or use advanced update
-                        # For "Forever" stability, let's keep it simple: Click to Delete/Complete
                         delete_row_by_index("Tasks", i)
                         if not is_done:
                             add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
@@ -226,6 +223,8 @@ def main():
                         st.markdown(f"~~{row['Task']}~~")
                     else:
                         st.markdown(f"**{row['Task']}**")
+        else:
+             st.info("Nothing to do yet!")
 
     # --- TAB 3: NOTES ---
     with tab3:
@@ -246,6 +245,8 @@ def main():
                     {row['Note']}
                 </div>
                 """, unsafe_allow_html=True)
+        else:
+            st.info("No notes yet. Be the first!")
 
 if __name__ == "__main__":
     main()
