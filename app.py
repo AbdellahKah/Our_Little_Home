@@ -74,31 +74,49 @@ def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     try:
-        # 1. Try loading from Secrets (The "Big Block" Method)
-        # We read the raw JSON string and convert it to a dictionary
-        json_str = st.secrets["gcp_service_account"]["service_account_json"]
-        creds_dict = json.loads(json_str)
+        # 1. Load from Secrets
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        
+        # --- THE AUTO-FIXER ---
+        # This handles every common copy-paste error
+        key = creds_dict["private_key"]
+        
+        # Fix 1: Convert literal \n strings to real newlines
+        key = key.replace("\\n", "\n")
+        
+        # Fix 2: Remove any accidental quotes at start/end
+        key = key.strip('"')
+        
+        # Fix 3: Ensure headers are correct
+        if "-----BEGIN PRIVATE KEY-----" not in key:
+            # If headers are missing, rebuild them
+            import re
+            clean_key = re.sub(r'[\s\n\r]', '', key) # Remove all whitespace
+            key = f"-----BEGIN PRIVATE KEY-----\n{clean_key}\n-----END PRIVATE KEY-----\n"
+            
+        creds_dict["private_key"] = key
+        # ----------------------
         
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    except:
-        # 2. Try loading from local file (Laptop)
+    except Exception as e:
+        # If secrets fail, try local file
         try:
             creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
         except:
-            return None 
+            st.error(f"❌ Connection Failed: {e}")
+            return None
 
     client = gspread.authorize(creds)
     
-    # --- YOUR SHEET ID ---
-    # I copied this from your screenshot url!
+    # YOUR SHEET ID
     SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms" 
     
     try:
         sheet = client.open_by_key(SHEET_ID)
         return sheet
     except Exception as e:
-        return f"Error: {e}"
-
+        return f"Error opening sheet: {e}"
+        
 # --- HELPER FUNCTIONS ---
 def get_data(worksheet_name):
     sheet = connect_to_gsheets()
@@ -252,5 +270,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
