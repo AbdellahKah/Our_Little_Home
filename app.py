@@ -139,7 +139,7 @@ def main_app():
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
-        user = st.radio("Who are you?", ["🤴 Husband", "👸 Wife"], horizontal=True, label_visibility="collapsed")
+        user = st.radio("Who are you?", ["🤴 Aboudii", "👸 Saratii"], horizontal=True, label_visibility="collapsed")
     st.write("") 
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
@@ -246,4 +246,5 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
+
 
