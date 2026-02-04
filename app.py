@@ -9,128 +9,36 @@ import time
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 
-# --- PASSWORD CONFIGURATION ---
+# --- PASSWORD ---
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS OVERHAUL (Final Polish) ---
+# --- FANCY CSS (Nuclear Fix) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
-
-    .stApp {
-        background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-        font-family: 'Nunito', sans-serif;
-    }
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    h1 {
-        font-family: 'Pacifico', cursive;
-        font-size: 3rem !important;
-        color: #5A189A !important;
-        text-shadow: 2px 2px 4px rgba(255,255,255,0.4);
-        font-weight: normal;
-        margin-bottom: 0px;
-    }
-    h3 {
-        font-family: 'Nunito', sans-serif;
-        color: #5A189A !important;
-        font-weight: 700;
-    }
-    p, label, span, div {
-        color: #4a4a4a;
-    }
-
-    .glass-card {
-        background: rgba(255, 255, 255, 0.5); 
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 25px;
-        border: 1px solid rgba(255, 255, 255, 0.5);
-        padding: 25px;
-        margin-bottom: 20px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-    }
-    
-    /* NUCLEAR INPUT FIXES */
-    div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg {
-        background-color: white !important;
-        border: 2px solid rgba(255,255,255,0.8) !important;
-        border-radius: 12px !important;
-        color: #5A189A !important;
-    }
-    div[data-baseweb="input"] {
-        background-color: white !important;
-        border-radius: 12px !important;
-    }
-    div[data-baseweb="select"] > div {
-        background-color: white !important;
-        color: #5A189A !important;
-        border-radius: 12px !important;
-    }
-    div[data-baseweb="select"] span {
-        color: #5A189A !important;
-    }
-    .streamlit-expanderHeader {
-        background-color: rgba(255,255,255,0.6) !important;
-        color: #5A189A !important;
-        border-radius: 12px !important;
-    }
-
-    div.stButton > button {
-        background: linear-gradient(90deg, #FF69B4, #DA70D6) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 25px;
-        height: 50px;
-        font-size: 18px;
-        font-weight: bold;
-        box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
-        width: 100%;
-        transition: 0.2s;
-    }
-    div.stButton > button:hover {
-        transform: scale(1.02);
-    }
-
-    .stTabs [data-baseweb="tab-list"] {
-        background-color: rgba(255,255,255,0.4);
-        border-radius: 50px;
-        padding: 8px;
-        gap: 10px;
-        margin-bottom: 20px;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 40px;
-        border-radius: 40px;
-        background-color: transparent;
-        color: #5A189A;
-        font-weight: 700;
-        border: none;
-        flex-grow: 1;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #fff !important;
-        color: #FF69B4 !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    }
-    
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    .stApp { background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb); background-size: 400% 400%; animation: gradient 15s ease infinite; font-family: 'Nunito', sans-serif; }
+    h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
+    h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
+    .glass-card { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+    div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
+    div[data-baseweb="input"] { background-color: white !important; border-radius: 12px !important; }
+    div[data-baseweb="select"] > div { background-color: white !important; color: #5A189A !important; border-radius: 12px !important; }
+    div[data-baseweb="select"] span { color: #5A189A !important; }
+    .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
+    div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
+    .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
+    .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
+    .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    header, #MainMenu, footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- GOOGLE SHEETS CONNECTION (No Cache to force retry) ---
+# --- GOOGLE SHEETS CONNECTION (With Auto-Refresh) ---
+# ttl=60 means "refresh the connection every 60 seconds" to find new tabs
+@st.cache_resource(ttl=60)
 def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     try:
-        # 1. Try Secrets
         creds_dict = dict(st.secrets["gcp_service_account"])
         if "private_key" in creds_dict:
             key = creds_dict["private_key"]
@@ -142,13 +50,13 @@ def connect_to_gsheets():
             creds_dict["private_key"] = key
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     except:
-        # 2. Try Local File
         try:
             creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
         except:
             return None
 
     client = gspread.authorize(creds)
+    # THIS ID MUST MATCH YOUR BROWSER URL
     SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
     
     try:
@@ -172,10 +80,10 @@ def add_row(worksheet_name, row_data):
     sheet = connect_to_gsheets()
     
     if not sheet:
-        st.error("❌ Connection Failed. Check your Secrets.")
+        st.error("❌ Disconnected. Check Secrets.")
         return False
     if isinstance(sheet, str):
-        st.error(f"❌ Error: {sheet}")
+        st.error(f"❌ Connection Error: {sheet}")
         return False
 
     try:
@@ -183,7 +91,14 @@ def add_row(worksheet_name, row_data):
         ws.append_row(row_data)
         return True
     except gspread.WorksheetNotFound:
-        st.error(f"❌ Error: Tab '{worksheet_name}' not found. Check Google Sheets.")
+        # --- DEBUG MODE ---
+        # This will tell you EXACTLY what tabs the app sees
+        try:
+            existing_tabs = [ws.title for ws in sheet.worksheets()]
+            st.error(f"❌ Error: Tab '{worksheet_name}' missing. I found these instead: {existing_tabs}")
+            st.info(f"💡 Tip: Do you see a space in the name? Like '{worksheet_name} '?")
+        except:
+             st.error(f"❌ Error: Tab '{worksheet_name}' not found.")
         return False
     except Exception as e:
         st.error(f"❌ Save Error: {e}")
@@ -240,17 +155,14 @@ def main_app():
                 event_name = st.text_input("What is the plan?")
                 st.write("") 
                 
-                # --- NEW SMART SAVE LOGIC ---
                 if st.form_submit_button("Save to Calendar"):
                     time_str = event_time.strftime("%H:%M") if event_time else "All Day"
                     success = add_row("Schedule", [str(event_date), time_str, event_name, user])
-                    
                     if success:
                         st.toast("Saved! Refreshing...", icon="🎉")
                         time.sleep(1)
                         st.rerun()
-                    # If success is False, NO rerun happens, so you can see the error!
-                    
+
         st.markdown('</div>', unsafe_allow_html=True)
 
         df_sched = get_data("Schedule")
