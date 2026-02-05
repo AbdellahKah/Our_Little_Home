@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + Magic Buttons) ---
+# --- FANCY CSS (Hearts & Flowers + Fixed Button Position) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -44,12 +44,12 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* --- MAGIC BUTTONS (Floating inside the card) --- */
-    /* This targets the Edit/Delete buttons in the list and lifts them UP */
+    /* --- MAGIC BUTTONS (Fixed Positioning) --- */
+    /* We increase the negative translateY to pull them UP into the box */
     div[data-testid="column"]:nth-of-type(n+2) button {
-        background: rgba(255, 255, 255, 0.4) !important;
+        background: rgba(255, 255, 255, 0.6) !important; /* Slightly more opaque */
         backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
         width: 40px !important;
         height: 40px !important;
@@ -59,13 +59,13 @@ st.markdown("""
         color: #5A189A !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         
-        /* THE MAGIC LIFT: Pulls buttons UP into the card above */
-        transform: translateY(-72px); 
-        z-index: 10;
+        /* UPDATED: Increased lift to -90px to get inside the box */
+        transform: translateY(-90px); 
+        z-index: 100; /* Ensure it sits ON TOP of the card */
         margin-top: 0px !important;
     }
     div[data-testid="column"]:nth-of-type(n+2) button:hover {
-        transform: translateY(-75px) scale(1.1); /* Keep the lift on hover */
+        transform: translateY(-93px) scale(1.1); /* Keep the lift on hover */
         background: #fff !important;
         border-color: #FF69B4 !important;
     }
@@ -99,9 +99,7 @@ def connect_to_gsheets():
 
     client = gspread.authorize(creds)
     
-    # 👇👇👇 YOUR SHEET ID 👇👇👇
     SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
-    # 👆👆👆 
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -131,7 +129,6 @@ def add_row(worksheet_name, row_data):
     try:
         ws = sheet.worksheet(worksheet_name)
     except:
-        # ⚠️ AUTO-CREATE TAB IF MISSING
         try:
             ws = sheet.add_worksheet(title=worksheet_name, rows=100, cols=10)
             if worksheet_name == "Schedule":
@@ -207,7 +204,7 @@ def main_app():
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
-    # --- TAB 1: DATES (MODIFIED LAYOUT) ---
+    # --- TAB 1: DATES ---
     with tab1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.expander("➕ Plan a New Date", expanded=False):
@@ -240,7 +237,7 @@ def main_app():
                     row_num = row['sheet_row']
 
                     # 1. RENDER HTML CARD
-                    # Note the empty <div> with min-width: 110px. This reserves space for buttons.
+                    # Gap is preserved to let buttons sit there
                     st.markdown(
                         f"""
                         <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px;'>
@@ -254,8 +251,8 @@ def main_app():
                         unsafe_allow_html=True
                     )
 
-                    # 2. RENDER BUTTONS (Float into the gap using CSS)
-                    # Columns: [Spacer, Edit, Delete, EndSpacer]
+                    # 2. RENDER BUTTONS (Float into the gap)
+                    # Increased lift ensures they go INSIDE the box
                     c_spacer, c_edit, c_del, c_end = st.columns([5.5, 0.6, 0.6, 1])
                     
                     with c_edit:
@@ -267,7 +264,7 @@ def main_app():
                             delete_specific_row("Schedule", row_num)
                             st.rerun()
 
-                    # 3. EDIT FORM (Below card)
+                    # 3. EDIT FORM
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
