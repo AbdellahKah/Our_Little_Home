@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + MOBILE COLUMN FIX) ---
+# --- FANCY CSS (Hearts & Flowers + MOBILE ROW FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -31,7 +31,7 @@ st.markdown("""
     /* CARD STYLES */
     .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-    /* GHOST CARD (Responsive Background) */
+    /* GHOST CARD (Background) */
     .ghost-card {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(12px);
@@ -42,29 +42,30 @@ st.markdown("""
         position: relative;
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        
-        /* Height setup for layout */
         height: 100px;
-        margin-bottom: -100px; 
+        margin-bottom: -100px; /* Pulls content UP */
     }
 
-    /* 📱 MOBILE FIX: FORCE HORIZONTAL LAYOUT */
-    /* This prevents columns from stacking vertically on phones */
-    [data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap !important;
-        align-items: center !important;
-    }
-    
-    /* Make text column shrink to fit screen */
-    [data-testid="column"] {
-        min-width: 0px !important;
-    }
-
-    /* Taller cards on mobile to fit wrapped text */
+    /* 🚀 MOBILE FIX: FORCE HORIZONTAL LAYOUT */
     @media (max-width: 640px) {
-        .ghost-card {
-            height: 120px !important; 
-            margin-bottom: -120px !important;
+        /* Force columns to stay side-by-side on phone */
+        [data-testid="stHorizontalBlock"] {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+        }
+        
+        /* Allow text column to shrink so buttons fit */
+        [data-testid="column"] {
+            min-width: 0px !important;
+            width: auto !important;
+            flex: 1 1 auto !important;
+        }
+        
+        /* Keep buttons fixed size */
+        [data-testid="column"]:has(button) {
+            flex: 0 0 auto !important;
+            width: auto !important;
         }
     }
 
@@ -90,13 +91,14 @@ st.markdown("""
         padding: 0 !important;
         color: #5A189A !important;
         margin-top: 10px !important;
-        min-width: 40px !important; /* Stop from squishing */
+        min-width: 40px !important;
     }
     
     div[data-testid="column"] button:not([kind="primary"]):hover {
         background: #fff !important;
         transform: scale(1.1);
         border-color: #FF69B4 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
     /* INPUTS */
@@ -272,11 +274,10 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # GHOST CARD
+                    # --- GHOST CARD LAYOUT ---
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
-                    # Columns: Text (flexible) | Edit | Delete | Emoji
-                    # On mobile, CSS forces these to stay side-by-side
+                    # NOTE: Added c_spacer to push buttons to right on large screens if needed
                     c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
@@ -299,8 +300,9 @@ def main_app():
                     with c_emoji:
                         st.markdown(f"<div style='font-size: 28px; padding-top: 15px;'>{icon}</div>", unsafe_allow_html=True)
                     
-                    st.write("") # Spacer
+                    st.write("") # Spacer for next row
 
+                    # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -385,7 +387,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 3: NOTES (REVERTED TO YELLOW STICKY NOTES) ---
+    # --- TAB 3: NOTES (REVERTED) ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
