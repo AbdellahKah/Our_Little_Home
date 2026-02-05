@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + OVERFLOW FIX) ---
+# --- FANCY CSS (Hearts & Flowers + LAYERED LAYOUT) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -24,63 +24,62 @@ st.markdown("""
         animation: gradient 15s ease infinite;
         font-family: 'Nunito', sans-serif;
     }
-    @keyframes gradient {
-        0% { background-position: 0 0, 40px 40px, 0% 50%; }
-        50% { background-position: 0 0, 40px 40px, 100% 50%; }
-        100% { background-position: 0 0, 40px 40px, 0% 50%; }
-    }
-
+    
     h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
     h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
+
+    /* CARD STYLES */
+    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+
+    /* THE GHOST CARD (Empty Background Layer) */
+    .ghost-card {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(12px);
+        border-radius: 25px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-left: 8px solid #5A189A;
+        height: 100px; /* Fixed height to match content */
+        width: 100%;
+        margin-bottom: -100px; /* 🚀 KEY: Pulls the next element UP 100px to sit inside */
+        position: relative;
+        z-index: 0;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
     
-    /* CARD STYLING */
-    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 15px 25px; margin-bottom: 10px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
-    
-    /* INPUT FIXES */
+    /* CONTENT ROW (Sits on top of ghost card) */
+    .content-row {
+        position: relative;
+        z-index: 10; /* Sits on top of ghost */
+        padding: 10px 15px;
+    }
+
+    /* BUTTON STYLING (Small Circles) */
+    /* Targeting both 'column' and 'stColumn' for compatibility */
+    div[data-testid="column"] button, div[data-testid="stColumn"] button {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border: 1px solid rgba(255, 255, 255, 0.8) !important;
+        border-radius: 50% !important;
+        width: 45px !important;
+        height: 45px !important;
+        padding: 0 !important;
+        color: #5A189A !important;
+        margin-top: 15px !important; /* Center vertically in the row */
+        min-width: 0px !important;
+    }
+    div[data-testid="column"] button:hover, div[data-testid="stColumn"] button:hover {
+        background: #fff !important;
+        transform: scale(1.1);
+        border-color: #FF69B4 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* INPUTS */
     div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
     div[data-baseweb="input"] { background-color: white !important; border-radius: 12px !important; }
     div[data-baseweb="select"] > div { background-color: white !important; color: #5A189A !important; border-radius: 12px !important; }
-    div[data-baseweb="select"] span { color: #5A189A !important; }
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
-    
-    /* --- MAGIC BUTTONS (THE REAL FIX) --- */
-    
-    /* 1. Unlock Overflow on Columns: This lets the buttons float "out" of their box */
-    div[data-testid="column"] {
-        overflow: visible !important;
-    }
 
-    /* 2. Target specific buttons inside columns (Small round ones) */
-    div[data-testid="column"] button {
-        background: rgba(255, 255, 255, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-radius: 50% !important;
-        
-        /* Force Small Size */
-        min-width: 0px !important;
-        width: 42px !important;
-        height: 42px !important;
-        
-        font-size: 16px !important;
-        padding: 0 !important;
-        color: #5A189A !important;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        
-        /* 3. The Lift: Use 'top' instead of margin for better stacking */
-        position: relative !important;
-        top: -90px !important; /* Lifts the button up into the card */
-        z-index: 1000 !important; /* Ensures it sits ON TOP of the card */
-        
-        margin-bottom: -50px !important; /* Cleanup space below */
-    }
-
-    div[data-testid="column"] button:hover {
-        transform: scale(1.1);
-        background: #fff !important;
-        border-color: #FF69B4 !important;
-    }
-    
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
     .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -198,7 +197,6 @@ def login_screen():
                 st.error("Wrong key! Are you a stranger? 😜")
 
 def main_app():
-    # --- CONNECTION CHECK ---
     sheet = connect_to_gsheets()
     if not sheet:
         st.error("⚠️ App cannot connect to Google Sheets.")
@@ -231,6 +229,7 @@ def main_app():
                         time.sleep(1)
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+        st.write("") # Spacer
         
         df = get_data("Schedule")
         if not df.empty and "Date" in df.columns:
@@ -241,29 +240,29 @@ def main_app():
             
             for month, group in df.groupby('Month', sort=False):
                 st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
+                
                 for i, row in group.iterrows():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # 1. RENDER HTML CARD
-                    # Note: We keep the gap logic just in case, but CSS lift is doing the heavy lifting
-                    st.markdown(
-                        f"""
-                        <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px; padding-right: 10px;'>
-                            <div style='flex-grow: 1;'>
-                                <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
-                                <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
-                            </div>
-                            <div style='min-width: 120px;'></div> <div style='font-size: 28px;'>{icon}</div>
-                        </div>
-                        """, 
-                        unsafe_allow_html=True
-                    )
-
-                    # 2. RENDER BUTTONS (Float into the gap using CSS)
-                    # We use specific columns to position them roughly over the gap
-                    c_spacer, c_edit, c_del, c_end = st.columns([5.5, 0.6, 0.6, 0.8])
+                    # --- THE "LAYERED CAKE" LAYOUT ---
+                    # 1. Draw the Empty Ghost Card (Background)
+                    # Use margin-bottom: -100px to allow the columns to overlap it
+                    st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
+                    # 2. Draw the Content (Text + Buttons) ON TOP
+                    # Layout: [Text (wide) | Edit | Delete | Emoji]
+                    c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
+                    
+                    with c_text:
+                        # Render text without any card styling (because the ghost card handles it)
+                        st.markdown(f"""
+                        <div style='padding: 15px 0 0 15px;'>
+                            <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
+                            <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
                     with c_edit:
                         if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
                             st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
@@ -272,8 +271,14 @@ def main_app():
                         if st.button("❌", key=f"del_{row_num}", help="Delete"):
                             delete_specific_row("Schedule", row_num)
                             st.rerun()
+                            
+                    with c_emoji:
+                        st.markdown(f"<div style='font-size: 28px; padding-top: 15px;'>{icon}</div>", unsafe_allow_html=True)
+                    
+                    # Spacer to push the next row down correctly (since we overlapped by 100px)
+                    st.write("") 
 
-                    # 3. EDIT FORM
+                    # 3. EDIT FORM (Standard flow)
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -290,7 +295,6 @@ def main_app():
                                 update_row("Schedule", row_num, [str(e_date), new_time_str, e_name, row['Identity']])
                                 st.session_state[f"editing_{row_num}"] = False
                                 st.rerun()
-
         else:
             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>✈️</div><h3>Nothing planned yet!</h3></div>", unsafe_allow_html=True)
 
