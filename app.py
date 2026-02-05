@@ -10,7 +10,7 @@ import os
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts Theme + Button Fixes) ---
+# --- FANCY CSS (Hearts Theme + Clean Icon Buttons) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -44,7 +44,7 @@ st.markdown("""
         box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
     }
 
-    /* 2. GENERAL BUTTONS (The big pink ones) */
+    /* 2. MAIN BUTTONS (Big Gradient Buttons for Save/Add) */
     div.stButton > button { 
         background: linear-gradient(90deg, #FF69B4, #DA70D6); 
         color: white; 
@@ -54,29 +54,37 @@ st.markdown("""
         font-size: 18px; 
         font-weight: bold; 
         width: 100%; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
 
-    /* 3. SMALL ACTION BUTTONS (Edit/Delete specific override) */
-    /* This targets buttons inside the 3-column layout to make them small & white */
+    /* 3. ICON BUTTONS (Transparent Edit/Delete) */
+    /* We target the buttons inside columns to strip them down to just icons */
     div[data-testid="column"] button {
-        background: rgba(255, 255, 255, 0.6) !important; /* Force transparent white */
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
-        color: #5A189A !important; /* Purple icon */
-        height: 42px !important;
-        width: 100% !important;
-        border-radius: 12px !important;
-        font-size: 18px !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
-        margin-top: 10px; /* Aligns visually with text box */
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: #5A189A !important; /* Deep Purple Icon */
+        font-size: 22px !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0px !important;
+        transition: transform 0.2s ease;
     }
     
+    /* Pop effect on hover */
     div[data-testid="column"] button:hover {
-        background: white !important;
-        transform: scale(1.02);
-        border-color: #5A189A !important;
+        transform: scale(1.2);
+        color: #FF1493 !important; /* Hot Pink on Hover */
+        background-color: transparent !important;
     }
 
-    /* Input Fields */
+    /* Center alignment for the icon columns */
+    div[data-testid="column"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
     input, textarea, select { font-size: 16px !important; }
     div[data-baseweb="input"] { background-color: rgba(255,255,255,0.9) !important; border-radius: 12px !important; }
 
@@ -93,7 +101,6 @@ def connect_to_gsheets():
             if "private_key" in creds_dict:
                 creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-            # 👇👇👇 YOUR SHEET ID 👇👇👇
             return gspread.authorize(creds).open_by_key("1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ")
     except:
         pass
@@ -195,8 +202,9 @@ def main_app():
 
                     # --- ROW LAYOUT ---
                     with st.container():
-                        # Using [5, 0.7, 0.7] keeps buttons tight to the text
-                        c_text, c_edit, c_del = st.columns([5, 0.7, 0.7])
+                        # Layout: Card [5] | Edit [0.5] | Delete [0.5]
+                        # Tighter ratios to bring icons close
+                        c_text, c_edit, c_del = st.columns([5, 0.5, 0.5])
                         
                         with c_text:
                             st.markdown(
@@ -214,7 +222,7 @@ def main_app():
                                 unsafe_allow_html=True
                             )
                         
-                        # Buttons sit in narrow columns
+                        # Just Icons
                         with c_edit:
                              if st.button("✏️", key=f"e_{row_num}"):
                                 st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
@@ -260,8 +268,9 @@ def main_app():
                 txt_deco = "line-through" if is_done else "none"
                 
                 # Checkbox | Text Layout
-                c_check, c_txt = st.columns([0.8, 5])
+                c_check, c_txt = st.columns([0.6, 5])
                 with c_check:
+                    # Clean checkbox button
                     btn_label = "✅" if is_done else "⬜"
                     if st.button(btn_label, key=f"tick_{i}"):
                         delete_specific_row("Tasks", i + 2)
