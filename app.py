@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers Edition) ---
+# --- FANCY CSS (Hearts & Flowers + Magic Buttons) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -32,7 +32,9 @@ st.markdown("""
 
     h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
     h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
-    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
+    
+    /* CARD STYLING */
+    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 15px 25px; margin-bottom: 10px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
     
     /* INPUT FIXES */
     div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
@@ -40,37 +42,32 @@ st.markdown("""
     div[data-baseweb="select"] > div { background-color: white !important; color: #5A189A !important; border-radius: 12px !important; }
     div[data-baseweb="select"] span { color: #5A189A !important; }
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
-    
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* --- NEW IMPROVED BUTTON STYLING (Glass Bubbles) --- */
-    div[data-testid="column"] button {
-        background: rgba(255, 255, 255, 0.3) !important; /* Semi-transparent */
+    /* --- MAGIC BUTTONS (Floating inside the card) --- */
+    /* This targets the Edit/Delete buttons in the list and lifts them UP */
+    div[data-testid="column"]:nth-of-type(n+2) button {
+        background: rgba(255, 255, 255, 0.4) !important;
         backdrop-filter: blur(5px);
-        -webkit-backdrop-filter: blur(5px);
         border: 1px solid rgba(255, 255, 255, 0.6) !important;
-        border-radius: 50% !important; /* Make them perfect circles */
-        width: 45px !important;
-        height: 45px !important;
-        font-size: 18px !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 16px !important;
         padding: 0 !important;
-        line-height: 45px !important; /* Centers icon vertically */
+        line-height: 40px !important;
         color: #5A189A !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth bounce */
-        margin-top: 15px; /* Aligns them better with the card text */
+        
+        /* THE MAGIC LIFT: Pulls buttons UP into the card above */
+        transform: translateY(-72px); 
+        z-index: 10;
+        margin-top: 0px !important;
     }
-
-    /* Hover Effect - Float Up & Glow */
-    div[data-testid="column"] button:hover {
-        transform: translateY(-3px) scale(1.1);
-        background: rgba(255, 255, 255, 0.9) !important;
-        box-shadow: 0 8px 15px rgba(90, 24, 154, 0.15);
+    div[data-testid="column"]:nth-of-type(n+2) button:hover {
+        transform: translateY(-75px) scale(1.1); /* Keep the lift on hover */
+        background: #fff !important;
         border-color: #FF69B4 !important;
-    }
-    
-    div[data-testid="column"] button:active {
-        transform: scale(0.95);
     }
 
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
@@ -102,9 +99,9 @@ def connect_to_gsheets():
 
     client = gspread.authorize(creds)
     
-    # 👇👇👇 PASTE YOUR REAL ID BELOW (Inside the quotes!) 👇👇👇
+    # 👇👇👇 YOUR SHEET ID 👇👇👇
     SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
-    # 👆👆👆 REPLACE THE TEXT ABOVE WITH YOUR LONG ID 👆👆👆
+    # 👆👆👆 
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -120,7 +117,6 @@ def get_data(worksheet_name):
         ws = sheet.worksheet(worksheet_name)
         data = ws.get_all_records()
         df = pd.DataFrame(data)
-        # Typo Fix: Remove hidden spaces in headers
         if not df.empty:
             df.columns = df.columns.str.strip()
         return df
@@ -133,13 +129,11 @@ def add_row(worksheet_name, row_data):
         st.error("❌ Disconnected. Check Sheet ID.")
         return False
     try:
-        # Try to open the existing tab
         ws = sheet.worksheet(worksheet_name)
     except:
-        # ⚠️ If it doesn't exist (or has a typo), create it automatically!
+        # ⚠️ AUTO-CREATE TAB IF MISSING
         try:
             ws = sheet.add_worksheet(title=worksheet_name, rows=100, cols=10)
-            # Add headers if we just created it
             if worksheet_name == "Schedule":
                 ws.append_row(["Date", "Time", "Event", "Identity"])
             elif worksheet_name == "Tasks":
@@ -150,7 +144,6 @@ def add_row(worksheet_name, row_data):
             st.error(f"Error creating sheet: {e}")
             return False
 
-    # Now append the data
     try:
         ws.append_row(row_data)
         return True
@@ -158,7 +151,6 @@ def add_row(worksheet_name, row_data):
         st.error(f"❌ Error appending data: {e}")
         return False
 
-# NEW: Safer Delete Function (uses exact row number)
 def delete_specific_row(worksheet_name, row_number):
     sheet = connect_to_gsheets()
     if sheet:
@@ -170,13 +162,11 @@ def delete_specific_row(worksheet_name, row_number):
             st.error(f"Error deleting: {e}")
             return False
 
-# NEW: Edit Function
 def update_row(worksheet_name, row_number, new_data):
     sheet = connect_to_gsheets()
     if sheet:
         try:
             ws = sheet.worksheet(worksheet_name)
-            # Update columns A-D for that row
             cell_range = f"A{row_number}:D{row_number}"
             ws.update(cell_range, [new_data]) 
             return True
@@ -202,7 +192,7 @@ def login_screen():
                 st.error("Wrong key! Are you a stranger? 😜")
 
 def main_app():
-    # --- CONNECTION CHECK (Before loading UI) ---
+    # --- CONNECTION CHECK ---
     sheet = connect_to_gsheets()
     if not sheet:
         st.error("⚠️ App cannot connect to Google Sheets.")
@@ -217,7 +207,7 @@ def main_app():
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
-    # --- TAB 1: DATES (MODIFIED WITH GLASS BUBBLES) ---
+    # --- TAB 1: DATES (MODIFIED LAYOUT) ---
     with tab1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.expander("➕ Plan a New Date", expanded=False):
@@ -238,9 +228,7 @@ def main_app():
         
         df = get_data("Schedule")
         if not df.empty and "Date" in df.columns:
-            # Track real row numbers (Index + 2 = 1-based index + Header row)
             df['sheet_row'] = df.index + 2
-            
             df['Date'] = pd.to_datetime(df['Date'])
             df = df.sort_values(by='Date')
             df['Month'] = df['Date'].dt.strftime('%B')
@@ -251,55 +239,48 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # Container for the row item
-                    with st.container():
-                        # MODIFIED COLUMNS: [5.5, 0.5, 0.5] brings buttons closer
-                        c_text, c_edit, c_del = st.columns([5.5, 0.5, 0.5])
-                        
-                        with c_text:
-                            st.markdown(
-                                f"""
-                                <div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;'>
-                                    <div>
-                                        <div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{row.get('Event', 'Date')}</div>
-                                        <div style='font-size: 14px; color: #666;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
-                                    </div>
-                                    <div style='font-size: 24px;'>{icon}</div>
-                                </div>
-                                """, 
-                                unsafe_allow_html=True
-                            )
-                        
-                        # Edit Button (Cleaned up for new CSS)
-                        with c_edit:
-                            if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
-                                # Toggle edit state
-                                st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
+                    # 1. RENDER HTML CARD
+                    # Note the empty <div> with min-width: 110px. This reserves space for buttons.
+                    st.markdown(
+                        f"""
+                        <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px;'>
+                            <div style='flex-grow: 1;'>
+                                <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
+                                <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
+                            </div>
+                            <div style='min-width: 110px;'></div> <div style='font-size: 28px;'>{icon}</div>
+                        </div>
+                        """, 
+                        unsafe_allow_html=True
+                    )
 
-                        # Delete Button (Cleaned up for new CSS)
-                        with c_del:
-                            if st.button("❌", key=f"del_{row_num}", help="Delete"):
-                                delete_specific_row("Schedule", row_num)
-                                st.rerun()
+                    # 2. RENDER BUTTONS (Float into the gap using CSS)
+                    # Columns: [Spacer, Edit, Delete, EndSpacer]
+                    c_spacer, c_edit, c_del, c_end = st.columns([5.5, 0.6, 0.6, 1])
+                    
+                    with c_edit:
+                        if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
+                            st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
 
-                    # Edit Form (appears if pencil is clicked)
+                    with c_del:
+                        if st.button("❌", key=f"del_{row_num}", help="Delete"):
+                            delete_specific_row("Schedule", row_num)
+                            st.rerun()
+
+                    # 3. EDIT FORM (Below card)
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
                             e_date = st.date_input("New Date", value=row['Date'])
-                            
-                            # Parse time safely
                             try:
                                 t_val = datetime.datetime.strptime(row['Time'], "%H:%M").time()
                             except:
                                 t_val = None
-                                
                             e_time = st.time_input("New Time", value=t_val)
                             e_name = st.text_input("Event Name", value=row['Event'])
                             
                             if st.form_submit_button("Update Event"):
                                 new_time_str = e_time.strftime("%H:%M") if e_time else "All Day"
-                                # Keep original author
                                 update_row("Schedule", row_num, [str(e_date), new_time_str, e_name, row['Identity']])
                                 st.session_state[f"editing_{row_num}"] = False
                                 st.rerun()
@@ -328,7 +309,6 @@ def main_app():
                 col_btn, col_txt = st.columns([1, 5])
                 with col_btn:
                     if st.button(icon, key=f"t_{i}"):
-                        # i + 2 is the sheet row (0-based index + header + 1-base)
                         delete_specific_row("Tasks", i + 2)
                         if not is_done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
                         st.rerun()
