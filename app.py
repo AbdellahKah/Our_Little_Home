@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + FIT-TO-SCREEN FIX) ---
+# --- FANCY CSS (Hearts & Flowers + ANTI-SQUASH MOBILE FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -31,7 +31,7 @@ st.markdown("""
     /* CARD STYLES */
     .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-    /* GHOST CARD */
+    /* GHOST CARD (Background) */
     .ghost-card {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(12px);
@@ -42,48 +42,48 @@ st.markdown("""
         position: relative;
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        height: 90px;
-        margin-bottom: -90px; 
+        
+        /* Height setup for layout */
+        height: 100px;
+        margin-bottom: -100px; 
     }
 
-    /* 🚀 FIT-TO-SCREEN ENGINE (NO SCROLLING) */
+    /* 🚀 MOBILE FIX: FORCE HORIZONTAL + PREVENT SQUASHING */
     @media (max-width: 640px) {
-        /* Force Horizontal Row with 0 Gaps */
+        /* 1. Force the row to stay horizontal (no stacking!) */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
+            overflow-x: auto !important; /* Allow scrolling if needed */
             align-items: center !important;
-            gap: 0px !important; /* Remove gaps to save space */
         }
         
-        /* 1. TEXT COLUMN: Flexible width */
+        /* 2. THE TEXT COLUMN: Force it to be wide (Anti-Squash) */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:not(:has(button)) {
-            flex: 1 1 auto !important;
+            flex: 1 0 auto !important; /* Grow freely, do not shrink below base */
             width: auto !important;
-            min-width: 0 !important;
-            padding-right: 2px !important; /* Tiny breathing room */
+            min-width: 65% !important; /* 🛡️ FORCE 65% WIDTH 🛡️ */
         }
         
-        /* 2. BUTTON COLUMNS: Fixed, small width */
+        /* 3. THE BUTTON COLUMNS: Force fixed size */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:has(button) {
             flex: 0 0 auto !important;
-            width: 38px !important; /* Fixed width for button container */
-            min-width: 38px !important;
-            padding: 0 !important;
+            width: 42px !important;
+            min-width: 42px !important;
+            padding: 0 2px !important;
         }
 
-        /* 3. EMOJI COLUMN */
+        /* 4. THE EMOJI COLUMN */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:last-child:not(:has(button)) {
             flex: 0 0 auto !important;
-            width: 30px !important;
-            min-width: 30px !important;
-            padding: 0 !important;
+            width: 35px !important;
+            min-width: 35px !important;
         }
         
-        /* Make ghost card taller for wrapped text */
+        /* Adjust Ghost Card height slightly for mobile */
         .ghost-card {
-            height: 100px;
-            margin-bottom: -100px;
+            height: 90px;
+            margin-bottom: -90px;
         }
     }
 
@@ -98,28 +98,18 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Secondary (Circle) - DESKTOP SIZE */
-    div[data-testid="column"] button:not([kind="primary"]) {
+    /* Secondary (Circle) inside columns */
+    div[data-testid="column"] button:not([kind="primary"]), 
+    div[data-testid="stColumn"] button:not([kind="primary"]) {
         background: rgba(255, 255, 255, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
-        width: 42px !important;
-        height: 42px !important;
+        width: 40px !important;
+        height: 40px !important;
         padding: 0 !important;
         color: #5A189A !important;
         margin-top: 10px !important;
-        min-width: 42px !important;
-    }
-
-    /* Secondary (Circle) - MOBILE SIZE (SMALLER TO FIT) */
-    @media (max-width: 640px) {
-        div[data-testid="column"] button:not([kind="primary"]) {
-            width: 35px !important;  /* Smaller button */
-            height: 35px !important;
-            min-width: 35px !important;
-            font-size: 14px !important; /* Smaller icon */
-            margin-top: 5px !important;
-        }
+        min-width: 40px !important;
     }
     
     div[data-testid="column"] button:not([kind="primary"]):hover {
@@ -163,7 +153,9 @@ def connect_to_gsheets():
             return None
 
     client = gspread.authorize(creds)
+    # 👇👇👇 PASTE YOUR ID HERE 👇👇👇
     SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ" 
+    # 👆👆👆
     try:
         sheet = client.open_by_key(SHEET_ID)
         return sheet
@@ -299,17 +291,17 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
+                    # GHOST CARD
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
-                    # Layout: Text(6) | Edit(1) | Delete(1) | Emoji(1)
-                    # Tight ratio to ensure everything fits on mobile
-                    c_text, c_edit, c_del, c_emoji = st.columns([6, 1, 1, 1])
+                    # Columns: Text (5) | Edit (0.7) | Delete (0.7) | Emoji (0.8)
+                    c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
                         st.markdown(f"""
-                        <div style='padding: 15px 0 0 5px;'>
-                            <div style='font-size: 18px; font-weight: bold; color: #5A189A; line-height: 1.1;'>{row.get('Event', 'Date')}</div>
-                            <div style='font-size: 12px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
+                        <div style='padding: 15px 0 0 10px;'>
+                            <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
+                            <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -323,10 +315,11 @@ def main_app():
                             st.rerun()
                             
                     with c_emoji:
-                        st.markdown(f"<div style='font-size: 24px; padding-top: 15px; text-align: center;'>{icon}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size: 28px; padding-top: 15px; text-align: center;'>{icon}</div>", unsafe_allow_html=True)
                     
                     st.write("") 
 
+                    # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -337,6 +330,7 @@ def main_app():
                                 t_val = None
                             e_time = st.time_input("New Time", value=t_val)
                             e_name = st.text_input("Event Name", value=row['Event'])
+                            
                             if st.form_submit_button("Update Event", type="primary"):
                                 new_time_str = e_time.strftime("%H:%M") if e_time else "All Day"
                                 update_row("Schedule", row_num, [str(e_date), new_time_str, e_name, row['Identity']])
@@ -369,21 +363,21 @@ def main_app():
                 status_icon = "↩️" if is_done else "⬜"
                 row_num = row['sheet_row']
 
+                # Ghost Card Pattern
                 st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                 
-                # Layout: Check(1) | Text(6) | Edit(1) | Delete(1)
-                c_status, c_text, c_edit, c_del = st.columns([1, 6, 1, 1])
+                c_status, c_text, c_edit, c_del = st.columns([0.8, 5, 0.7, 0.7])
                 
                 with c_status:
-                    if st.button(status_icon, key=f"stat_{row_num}", help="Mark done"):
+                    if st.button(status_icon, key=f"stat_{row_num}", help="Mark done/undo"):
                         new_status = "Pending" if is_done else "Done"
                         update_row("Tasks", row_num, [row['Task'], new_status, row['Author'], row['Date']])
                         st.rerun()
 
                 with c_text:
                     st.markdown(f"""
-                        <div style='padding: 20px 0 0 0px; opacity: {opacity}; text-decoration: {decoration};'>
-                            <span style='font-size: 16px; color: #333; font-weight: 600;'>{row['Task']}</span>
+                        <div style='padding: 20px 0 0 10px; opacity: {opacity}; text-decoration: {decoration};'>
+                            <span style='font-size: 18px; color: #333; font-weight: 600;'>{row['Task']}</span>
                         </div>
                     """, unsafe_allow_html=True)
 
@@ -396,7 +390,7 @@ def main_app():
                         delete_specific_row("Tasks", row_num)
                         st.rerun()
 
-                st.write("") 
+                st.write("") # Spacer
 
                 if st.session_state.get(f"editing_t_{row_num}"):
                     with st.form(key=f"edit_task_form_{row_num}"):
@@ -410,7 +404,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 3: NOTES (Classic) ---
+    # --- TAB 3: NOTES (Classic Yellow) ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
