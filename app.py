@@ -43,18 +43,34 @@ st.markdown("""
     
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* NEW: Small Edit/Delete Buttons Style */
+    /* --- NEW IMPROVED BUTTON STYLING (Glass Bubbles) --- */
     div[data-testid="column"] button {
-        background: transparent !important;
-        border: 1px solid rgba(255,255,255,0.5) !important;
-        font-size: 16px;
-        padding: 0px 10px;
-        height: 40px;
+        background: rgba(255, 255, 255, 0.3) !important; /* Semi-transparent */
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.6) !important;
+        border-radius: 50% !important; /* Make them perfect circles */
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 18px !important;
+        padding: 0 !important;
+        line-height: 45px !important; /* Centers icon vertically */
         color: #5A189A !important;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Smooth bounce */
+        margin-top: 15px; /* Aligns them better with the card text */
     }
+
+    /* Hover Effect - Float Up & Glow */
     div[data-testid="column"] button:hover {
-        background: rgba(255,255,255,0.5) !important;
-        border-color: #5A189A !important;
+        transform: translateY(-3px) scale(1.1);
+        background: rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 0 8px 15px rgba(90, 24, 154, 0.15);
+        border-color: #FF69B4 !important;
+    }
+    
+    div[data-testid="column"] button:active {
+        transform: scale(0.95);
     }
 
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
@@ -201,7 +217,7 @@ def main_app():
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
-    # --- TAB 1: DATES (MODIFIED WITH EDIT/DELETE) ---
+    # --- TAB 1: DATES (MODIFIED WITH GLASS BUBBLES) ---
     with tab1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.expander("➕ Plan a New Date", expanded=False):
@@ -237,8 +253,8 @@ def main_app():
 
                     # Container for the row item
                     with st.container():
-                        # Columns: Text (wide) | Edit (small) | Delete (small)
-                        c_text, c_edit, c_del = st.columns([5, 0.7, 0.7])
+                        # MODIFIED COLUMNS: [5.5, 0.5, 0.5] brings buttons closer
+                        c_text, c_edit, c_del = st.columns([5.5, 0.5, 0.5])
                         
                         with c_text:
                             st.markdown(
@@ -254,18 +270,14 @@ def main_app():
                                 unsafe_allow_html=True
                             )
                         
-                        # Edit Button
+                        # Edit Button (Cleaned up for new CSS)
                         with c_edit:
-                            st.write("") # Spacer
-                            st.write("") 
                             if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
                                 # Toggle edit state
                                 st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
 
-                        # Delete Button
+                        # Delete Button (Cleaned up for new CSS)
                         with c_del:
-                            st.write("") # Spacer
-                            st.write("")
                             if st.button("❌", key=f"del_{row_num}", help="Delete"):
                                 delete_specific_row("Schedule", row_num)
                                 st.rerun()
@@ -354,5 +366,3 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
-
-
