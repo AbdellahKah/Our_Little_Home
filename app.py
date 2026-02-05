@@ -38,19 +38,16 @@ def connect_to_gsheets():
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         client = gspread.authorize(creds)
         
-        # ⚠️ YOUR SHEET ID ⚠️
-        SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+        # 👇👇👇 PASTE YOUR ID BELOW 👇👇👇
+        SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ" 
+        # 👆👆👆 PASTE YOUR ID ABOVE 👆👆👆
         
-        # Override with custom ID if provided
-        if "custom_sheet_id" in st.session_state:
-            SHEET_ID = st.session_state["custom_sheet_id"]
-            
         return client.open_by_key(SHEET_ID)
     except Exception as e:
         st.session_state["connection_error"] = str(e)
         return None
 
-# --- ADD ROW FUNCTION (WITH DEBUGGING) ---
+# --- ADD ROW FUNCTION ---
 def add_row(worksheet_name, row_data):
     sheet = connect_to_gsheets()
     if not sheet:
@@ -62,11 +59,10 @@ def add_row(worksheet_name, row_data):
         ws.append_row(row_data)
         return True
     except Exception as e:
-        # SHOW THE EXACT ERROR ON SCREEN
         st.error(f"❌ Failed to save to '{worksheet_name}': {e}")
         return False
 
-# --- GET DATA FUNCTION (WITH COLUMN CHECKER) ---
+# --- GET DATA FUNCTION ---
 def get_data(worksheet_name):
     sheet = connect_to_gsheets()
     if not sheet: return pd.DataFrame()
@@ -74,12 +70,10 @@ def get_data(worksheet_name):
         ws = sheet.worksheet(worksheet_name)
         data = ws.get_all_records()
         df = pd.DataFrame(data)
-        # Clean columns (remove spaces)
         if not df.empty:
             df.columns = df.columns.str.strip()
         return df
     except Exception as e:
-        st.warning(f"⚠️ Could not read '{worksheet_name}': {e}")
         return pd.DataFrame()
 
 def delete_row_by_index(worksheet_name, index):
@@ -118,25 +112,11 @@ def main():
     sheet = connect_to_gsheets()
     if not sheet:
         st.error("❌ App cannot connect to Google Sheets.")
-        st.write(f"Error details: {st.session_state.get('connection_error')}")
-        new_id = st.text_input("Paste correct Sheet ID here:")
-        if st.button("Update ID"):
-            st.session_state["custom_sheet_id"] = new_id.strip()
-            st.rerun()
+        st.info("Did you paste your Sheet ID in the code?")
         return
 
     # APP UI
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
-    
-    # DEBUG EXPANDER (Use this to check columns!)
-    with st.expander("🕵️ Debugging Tools (Open if things break)"):
-        st.write("Current Sheet ID:", sheet.id)
-        tabs = [ws.title for ws in sheet.worksheets()]
-        st.write("Tabs Found:", tabs)
-        if st.button("Test Write Permission"):
-            res = add_row("Notes", ["TEST", "System", "Connection Test"])
-            if res: st.success("Write Successful! (Added a test note)")
-            else: st.error("Write Failed.")
 
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
@@ -162,18 +142,11 @@ def main():
         
         df = get_data("Schedule")
         if not df.empty:
-            # Check for required columns
-            required = ["Date", "Time", "Event", "Identity"]
-            missing = [c for c in required if c not in df.columns]
-            if missing:
-                st.error(f"❌ Columns missing in 'Schedule' tab: {missing}")
-                st.info(f"Found columns: {list(df.columns)}")
-            else:
-                df['Date'] = pd.to_datetime(df['Date'])
-                df = df.sort_values(by='Date')
-                for i, row in df.iterrows():
-                    icon = '🤴' if 'Aboudii' in str(row['Identity']) else '👸'
-                    st.markdown(f"<div class='glass-card' style='padding: 15px; display: flex; justify-content: space-between;'><div><b>{row['Event']}</b><br><small>{row['Date'].strftime('%a %d %b')} • {row['Time']}</small></div><div style='font-size: 24px;'>{icon}</div></div>", unsafe_allow_html=True)
+            df['Date'] = pd.to_datetime(df['Date'])
+            df = df.sort_values(by='Date')
+            for i, row in df.iterrows():
+                icon = '🤴' if 'Aboudii' in str(row['Identity']) else '👸'
+                st.markdown(f"<div class='glass-card' style='padding: 15px; display: flex; justify-content: space-between;'><div><b>{row['Event']}</b><br><small>{row['Date'].strftime('%a %d %b')} • {row['Time']}</small></div><div style='font-size: 24px;'>{icon}</div></div>", unsafe_allow_html=True)
 
     # TAB 2: TASKS
     with t2:
@@ -188,18 +161,13 @@ def main():
         
         df = get_data("Tasks")
         if not df.empty:
-            required = ["Task", "Status"]
-            missing = [c for c in required if c not in df.columns]
-            if missing:
-                st.error(f"❌ Columns missing in 'Tasks' tab: {missing}")
-            else:
-                for i, row in df.iterrows():
-                    done = row['Status'] == "Done"
-                    st.markdown(f"<div style='background: rgba(255,255,255,0.7); padding: 10px; border-radius: 10px; margin-bottom: 5px; text-decoration: {'line-through' if done else 'none'}; opacity: {0.6 if done else 1};'>{row['Task']}</div>", unsafe_allow_html=True)
-                    if st.button("✅ Done" if not done else "🗑️ Delete", key=f"btn_{i}"):
-                        delete_row_by_index("Tasks", i)
-                        if not done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
-                        st.rerun()
+            for i, row in df.iterrows():
+                done = row['Status'] == "Done"
+                st.markdown(f"<div style='background: rgba(255,255,255,0.7); padding: 10px; border-radius: 10px; margin-bottom: 5px; text-decoration: {'line-through' if done else 'none'}; opacity: {0.6 if done else 1};'>{row['Task']}</div>", unsafe_allow_html=True)
+                if st.button("✅ Done" if not done else "🗑️ Delete", key=f"btn_{i}"):
+                    delete_row_by_index("Tasks", i)
+                    if not done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
+                    st.rerun()
 
     # TAB 3: NOTES
     with t3:
@@ -215,11 +183,8 @@ def main():
         
         df = get_data("Notes")
         if not df.empty:
-            if "Note" not in df.columns:
-                 st.error("❌ Column 'Note' missing in Notes tab.")
-            else:
-                for i, row in df.iloc[::-1].iterrows():
-                    st.markdown(f"<div class='glass-card' style='background: #fff9c4; color: #333;'>{row['Note']}</div>", unsafe_allow_html=True)
+            for i, row in df.iloc[::-1].iterrows():
+                st.markdown(f"<div class='glass-card' style='background: #fff9c4; color: #333;'>{row['Note']}</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
