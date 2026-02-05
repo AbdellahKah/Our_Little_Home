@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + ROBUST BUTTON FIX) ---
+# --- FANCY CSS (Hearts & Flowers + OVERFLOW FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -44,9 +44,14 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* --- MAGIC BUTTONS (Fixed Selector) --- */
-    /* Target buttons inside columns. 
-       We limit width to 45px to avoid hitting the big 'Save' buttons. */
+    /* --- MAGIC BUTTONS (THE REAL FIX) --- */
+    
+    /* 1. Unlock Overflow on Columns: This lets the buttons float "out" of their box */
+    div[data-testid="column"] {
+        overflow: visible !important;
+    }
+
+    /* 2. Target specific buttons inside columns (Small round ones) */
     div[data-testid="column"] button {
         background: rgba(255, 255, 255, 0.8) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
@@ -62,10 +67,12 @@ st.markdown("""
         color: #5A189A !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         
-        /* MOVE IT UP INTO THE CARD */
-        margin-top: -85px !important; /* Lifts the button up */
+        /* 3. The Lift: Use 'top' instead of margin for better stacking */
         position: relative !important;
-        z-index: 100 !important;
+        top: -90px !important; /* Lifts the button up into the card */
+        z-index: 1000 !important; /* Ensures it sits ON TOP of the card */
+        
+        margin-bottom: -50px !important; /* Cleanup space below */
     }
 
     div[data-testid="column"] button:hover {
@@ -74,11 +81,6 @@ st.markdown("""
         border-color: #FF69B4 !important;
     }
     
-    /* Remove extra spacing from the column wrapper to tighten layout */
-    div[data-testid="column"] {
-        background-color: transparent !important;
-    }
-
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
     .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -244,7 +246,7 @@ def main_app():
                     row_num = row['sheet_row']
 
                     # 1. RENDER HTML CARD
-                    # Note the empty <div> with min-width: 120px to hold space for buttons
+                    # Note: We keep the gap logic just in case, but CSS lift is doing the heavy lifting
                     st.markdown(
                         f"""
                         <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px; padding-right: 10px;'>
