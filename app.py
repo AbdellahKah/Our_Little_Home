@@ -42,6 +42,21 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
+    
+    /* NEW: Small Edit/Delete Buttons Style */
+    div[data-testid="column"] button {
+        background: transparent !important;
+        border: 1px solid rgba(255,255,255,0.5) !important;
+        font-size: 16px;
+        padding: 0px 10px;
+        height: 40px;
+        color: #5A189A !important;
+    }
+    div[data-testid="column"] button:hover {
+        background: rgba(255,255,255,0.5) !important;
+        border-color: #5A189A !important;
+    }
+
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
     .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
     .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -72,7 +87,7 @@ def connect_to_gsheets():
     client = gspread.authorize(creds)
     
     # 👇👇👇 PASTE YOUR REAL ID BELOW (Inside the quotes!) 👇👇👇
-    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
+    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
     # 👆👆👆 REPLACE THE TEXT ABOVE WITH YOUR LONG ID 👆👆👆
     
     try:
@@ -109,18 +124,31 @@ def add_row(worksheet_name, row_data):
         st.error(f"❌ Error: {e}")
         return False
 
-def delete_row_by_index(worksheet_name, index):
+# NEW: Safer Delete Function (uses exact row number)
+def delete_specific_row(worksheet_name, row_number):
     sheet = connect_to_gsheets()
     if sheet:
         try:
             ws = sheet.worksheet(worksheet_name)
-            all_rows = ws.get_all_values()
-            if index + 1 < len(all_rows):
-                del all_rows[index + 1]
-                ws.clear()
-                ws.update(all_rows)
-        except:
-            pass
+            ws.delete_rows(row_number)
+            return True
+        except Exception as e:
+            st.error(f"Error deleting: {e}")
+            return False
+
+# NEW: Edit Function
+def update_row(worksheet_name, row_number, new_data):
+    sheet = connect_to_gsheets()
+    if sheet:
+        try:
+            ws = sheet.worksheet(worksheet_name)
+            # Update columns A-D for that row
+            cell_range = f"A{row_number}:D{row_number}"
+            ws.update(cell_range, [new_data]) 
+            return True
+        except Exception as e:
+            st.error(f"Error updating: {e}")
+            return False
 
 # --- SCREENS ---
 def login_screen():
@@ -155,6 +183,7 @@ def main_app():
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
+    # --- TAB 1: DATES (MODIFIED WITH EDIT/DELETE) ---
     with tab1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.expander("➕ Plan a New Date", expanded=False):
@@ -175,17 +204,80 @@ def main_app():
         
         df = get_data("Schedule")
         if not df.empty and "Date" in df.columns:
+            # Track real row numbers (Index + 2 = 1-based index + Header row)
+            df['sheet_row'] = df.index + 2
+            
             df['Date'] = pd.to_datetime(df['Date'])
             df = df.sort_values(by='Date')
             df['Month'] = df['Date'].dt.strftime('%B')
+            
             for month, group in df.groupby('Month', sort=False):
                 st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
                 for i, row in group.iterrows():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
-                    st.markdown(f"<div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'><div style='flex-grow: 1;'><div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{row.get('Event', 'Date')}</div><div style='font-size: 14px; color: #666;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div></div><div style='text-align: right; min-width: 60px;'><div style='font-size: 24px;'>{icon}</div></div></div>", unsafe_allow_html=True)
+                    row_num = row['sheet_row']
+
+                    # Container for the row item
+                    with st.container():
+                        # Columns: Text (wide) | Edit (small) | Delete (small)
+                        c_text, c_edit, c_del = st.columns([5, 0.7, 0.7])
+                        
+                        with c_text:
+                            st.markdown(
+                                f"""
+                                <div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;'>
+                                    <div>
+                                        <div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{row.get('Event', 'Date')}</div>
+                                        <div style='font-size: 14px; color: #666;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
+                                    </div>
+                                    <div style='font-size: 24px;'>{icon}</div>
+                                </div>
+                                """, 
+                                unsafe_allow_html=True
+                            )
+                        
+                        # Edit Button
+                        with c_edit:
+                            st.write("") # Spacer
+                            st.write("") 
+                            if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
+                                # Toggle edit state
+                                st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
+
+                        # Delete Button
+                        with c_del:
+                            st.write("") # Spacer
+                            st.write("")
+                            if st.button("❌", key=f"del_{row_num}", help="Delete"):
+                                delete_specific_row("Schedule", row_num)
+                                st.rerun()
+
+                    # Edit Form (appears if pencil is clicked)
+                    if st.session_state.get(f"editing_{row_num}"):
+                        with st.form(key=f"edit_form_{row_num}"):
+                            st.caption(f"Editing: {row['Event']}")
+                            e_date = st.date_input("New Date", value=row['Date'])
+                            
+                            # Parse time safely
+                            try:
+                                t_val = datetime.datetime.strptime(row['Time'], "%H:%M").time()
+                            except:
+                                t_val = None
+                                
+                            e_time = st.time_input("New Time", value=t_val)
+                            e_name = st.text_input("Event Name", value=row['Event'])
+                            
+                            if st.form_submit_button("Update Event"):
+                                new_time_str = e_time.strftime("%H:%M") if e_time else "All Day"
+                                # Keep original author
+                                update_row("Schedule", row_num, [str(e_date), new_time_str, e_name, row['Identity']])
+                                st.session_state[f"editing_{row_num}"] = False
+                                st.rerun()
+
         else:
             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>✈️</div><h3>Nothing planned yet!</h3></div>", unsafe_allow_html=True)
 
+    # --- TAB 2: TASKS ---
     with tab2:
         st.markdown('<div class="glass-card" style="padding: 15px;">', unsafe_allow_html=True)
         c1, c2 = st.columns([4, 1])
@@ -206,7 +298,8 @@ def main_app():
                 col_btn, col_txt = st.columns([1, 5])
                 with col_btn:
                     if st.button(icon, key=f"t_{i}"):
-                        delete_row_by_index("Tasks", i)
+                        # i + 2 is the sheet row (0-based index + header + 1-base)
+                        delete_specific_row("Tasks", i + 2)
                         if not is_done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
                         st.rerun()
                 with col_txt:
@@ -214,6 +307,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
+    # --- TAB 3: NOTES ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
