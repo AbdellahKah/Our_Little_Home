@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + MOBILE FIX) ---
+# --- FANCY CSS (Hearts & Flowers + MOBILE COLUMN FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -28,10 +28,10 @@ st.markdown("""
     h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
     h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
 
-    /* CARD STYLES (Used for Inputs) */
+    /* CARD STYLES */
     .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-    /* --- THE GHOST CARD (Responsive) --- */
+    /* GHOST CARD (Responsive Background) */
     .ghost-card {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(12px);
@@ -43,21 +43,33 @@ st.markdown("""
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         
-        /* DESKTOP HEIGHT */
+        /* Height setup for layout */
         height: 100px;
-        margin-bottom: -100px; /* Pulls content UP */
+        margin-bottom: -100px; 
     }
 
-    /* 📱 MOBILE FIX: Make card taller on small screens */
+    /* 📱 MOBILE FIX: FORCE HORIZONTAL LAYOUT */
+    /* This prevents columns from stacking vertically on phones */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+    }
+    
+    /* Make text column shrink to fit screen */
+    [data-testid="column"] {
+        min-width: 0px !important;
+    }
+
+    /* Taller cards on mobile to fit wrapped text */
     @media (max-width: 640px) {
         .ghost-card {
-            height: 180px !important; /* Taller to fit wrapped text */
-            margin-bottom: -180px !important; /* Pull up more */
+            height: 120px !important; 
+            margin-bottom: -120px !important;
         }
     }
 
     /* BUTTONS */
-    /* Primary (Rectangle) for Login, Save, Add */
+    /* Primary (Rectangle) */
     button[kind="primary"] {
         border-radius: 25px !important;
         height: 50px !important;
@@ -67,26 +79,24 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Secondary (Circle) for Edit/Delete */
+    /* Secondary (Circle) inside columns */
     div[data-testid="column"] button:not([kind="primary"]), 
     div[data-testid="stColumn"] button:not([kind="primary"]) {
         background: rgba(255, 255, 255, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
-        width: 45px !important;
-        height: 45px !important;
+        width: 40px !important;
+        height: 40px !important;
         padding: 0 !important;
         color: #5A189A !important;
         margin-top: 10px !important;
-        min-width: 0px !important;
+        min-width: 40px !important; /* Stop from squishing */
     }
     
-    div[data-testid="column"] button:not([kind="primary"]):hover,
-    div[data-testid="stColumn"] button:not([kind="primary"]):hover {
+    div[data-testid="column"] button:not([kind="primary"]):hover {
         background: #fff !important;
         transform: scale(1.1);
         border-color: #FF69B4 !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
     /* INPUTS */
@@ -189,7 +199,6 @@ def update_row(worksheet_name, row_number, new_data):
     if sheet:
         try:
             ws = sheet.worksheet(worksheet_name)
-            # Standard A-D range for Dates/Tasks
             cell_range = f"A{row_number}:D{row_number}"
             ws.update(cell_range, [new_data]) 
             return True
@@ -206,7 +215,6 @@ def login_screen():
     with c2:
         password = st.text_input("Enter the Secret Key:", type="password", placeholder="Shhh...")
         st.write("") 
-        # IMPORTANT: type="primary" keeps this button RECTANGULAR
         if st.button("Open Door 🔑", type="primary", use_container_width=True):
             if password == SECRET_PASSWORD:
                 st.session_state.authenticated = True
@@ -240,7 +248,6 @@ def main_app():
                 with c2: event_time = st.time_input("Time", value=None)
                 event_name = st.text_input("What is the plan?")
                 st.write("") 
-                # PRIMARY BUTTON -> RECTANGLE
                 if st.form_submit_button("Save to Calendar", type="primary"):
                     time_str = event_time.strftime("%H:%M") if event_time else "All Day"
                     success = add_row("Schedule", [str(event_date), time_str, event_name, user])
@@ -265,9 +272,11 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # --- GHOST CARD LAYOUT ---
+                    # GHOST CARD
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
+                    # Columns: Text (flexible) | Edit | Delete | Emoji
+                    # On mobile, CSS forces these to stay side-by-side
                     c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
@@ -279,12 +288,10 @@ def main_app():
                         """, unsafe_allow_html=True)
 
                     with c_edit:
-                        # DEFAULT BUTTON -> CIRCLE
                         if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
                             st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
 
                     with c_del:
-                        # DEFAULT BUTTON -> CIRCLE
                         if st.button("❌", key=f"del_{row_num}", help="Delete"):
                             delete_specific_row("Schedule", row_num)
                             st.rerun()
@@ -292,9 +299,8 @@ def main_app():
                     with c_emoji:
                         st.markdown(f"<div style='font-size: 28px; padding-top: 15px;'>{icon}</div>", unsafe_allow_html=True)
                     
-                    st.write("") # Spacer for next row
+                    st.write("") # Spacer
 
-                    # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -320,12 +326,12 @@ def main_app():
         c1, c2 = st.columns([4, 1])
         with c1: new_task = st.text_input("Task", placeholder="Add a new task...", label_visibility="collapsed")
         with c2: 
-            # PRIMARY BUTTON -> RECTANGLE
             if st.button("Add", type="primary"):
                 if new_task:
                     success = add_row("Tasks", [new_task, "Pending", user, datetime.datetime.now().strftime("%Y-%m-%d")])
                     if success: st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+        st.write("")
         
         df = get_data("Tasks")
         if not df.empty and "Task" in df.columns:
@@ -344,7 +350,6 @@ def main_app():
                 c_status, c_text, c_edit, c_del = st.columns([0.8, 5, 0.7, 0.7])
                 
                 with c_status:
-                    # Toggle Status
                     if st.button(status_icon, key=f"stat_{row_num}", help="Mark done/undo"):
                         new_status = "Pending" if is_done else "Done"
                         update_row("Tasks", row_num, [row['Task'], new_status, row['Author'], row['Date']])
