@@ -114,14 +114,32 @@ def get_data(worksheet_name):
 def add_row(worksheet_name, row_data):
     sheet = connect_to_gsheets()
     if not sheet:
-        st.error("❌ Disconnected. Check ID.")
+        st.error("❌ Disconnected. Check Sheet ID.")
         return False
     try:
+        # Try to open the existing tab
         ws = sheet.worksheet(worksheet_name)
+    except:
+        # ⚠️ If it doesn't exist (or has a typo), create it automatically!
+        try:
+            ws = sheet.add_worksheet(title=worksheet_name, rows=100, cols=10)
+            # Add headers if we just created it
+            if worksheet_name == "Schedule":
+                ws.append_row(["Date", "Time", "Event", "Identity"])
+            elif worksheet_name == "Tasks":
+                ws.append_row(["Task", "Status", "Author", "Date"])
+            elif worksheet_name == "Notes":
+                ws.append_row(["Date", "Author", "Note"])
+        except Exception as e:
+            st.error(f"Error creating sheet: {e}")
+            return False
+
+    # Now append the data
+    try:
         ws.append_row(row_data)
         return True
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"❌ Error appending data: {e}")
         return False
 
 # NEW: Safer Delete Function (uses exact row number)
@@ -336,3 +354,4 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
+
