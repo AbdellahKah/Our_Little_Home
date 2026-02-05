@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + TARGETED BUTTON FIX) ---
+# --- FANCY CSS (Hearts & Flowers + ROBUST BUTTON FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -44,53 +44,39 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* --- MAGIC BUTTONS (Targeted Lift) --- */
-    /* Target the Edit button specifically using title attribute */
-    button[title="Edit"] {
+    /* --- MAGIC BUTTONS (Fixed Selector) --- */
+    /* Target buttons inside columns. 
+       We limit width to 45px to avoid hitting the big 'Save' buttons. */
+    div[data-testid="column"] button {
         background: rgba(255, 255, 255, 0.8) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
+        
+        /* Force Small Size */
+        min-width: 0px !important;
+        width: 42px !important;
+        height: 42px !important;
+        
         font-size: 16px !important;
         padding: 0 !important;
-        line-height: 40px !important;
         color: #5A189A !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         
         /* MOVE IT UP INTO THE CARD */
+        margin-top: -85px !important; /* Lifts the button up */
         position: relative !important;
-        top: -105px !important;  /* Physical lift */
-        left: -10px !important;
         z-index: 100 !important;
-        margin-bottom: -100px !important; /* Remove empty space */
     }
 
-    /* Target the Delete button specifically */
-    button[title="Delete"] {
-        background: rgba(255, 255, 255, 0.8) !important;
-        border: 1px solid rgba(255, 255, 255, 0.8) !important;
-        border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 16px !important;
-        padding: 0 !important;
-        line-height: 40px !important;
-        color: #D00000 !important; /* Red color for delete */
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        
-        /* MOVE IT UP INTO THE CARD */
-        position: relative !important;
-        top: -105px !important; 
-        left: -10px !important;
-        z-index: 100 !important;
-        margin-bottom: -100px !important; /* Remove empty space */
-    }
-
-    button[title="Edit"]:hover, button[title="Delete"]:hover {
+    div[data-testid="column"] button:hover {
         transform: scale(1.1);
         background: #fff !important;
         border-color: #FF69B4 !important;
+    }
+    
+    /* Remove extra spacing from the column wrapper to tighten layout */
+    div[data-testid="column"] {
+        background-color: transparent !important;
     }
 
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
@@ -257,8 +243,8 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # 1. RENDER HTML CARD (With Gap for Buttons)
-                    # min-width: 110px reserves space for the buttons to land in
+                    # 1. RENDER HTML CARD
+                    # Note the empty <div> with min-width: 120px to hold space for buttons
                     st.markdown(
                         f"""
                         <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px; padding-right: 10px;'>
@@ -266,23 +252,21 @@ def main_app():
                                 <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
                                 <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
                             </div>
-                            <div style='min-width: 110px;'></div> <div style='font-size: 28px;'>{icon}</div>
+                            <div style='min-width: 120px;'></div> <div style='font-size: 28px;'>{icon}</div>
                         </div>
                         """, 
                         unsafe_allow_html=True
                     )
 
-                    # 2. RENDER BUTTONS (Targeted via 'help' attribute)
-                    # The CSS catches 'button[title="Edit"]' and pulls it up -105px
-                    c_spacer, c_edit, c_del, c_emoji_spacer = st.columns([5.5, 0.6, 0.6, 0.8])
+                    # 2. RENDER BUTTONS (Float into the gap using CSS)
+                    # We use specific columns to position them roughly over the gap
+                    c_spacer, c_edit, c_del, c_end = st.columns([5.5, 0.6, 0.6, 0.8])
                     
                     with c_edit:
-                        # IMPORTANT: help="Edit" allows CSS to find this specific button
                         if st.button("✏️", key=f"edit_{row_num}", help="Edit"):
                             st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
 
                     with c_del:
-                        # IMPORTANT: help="Delete" allows CSS to find this specific button
                         if st.button("❌", key=f"del_{row_num}", help="Delete"):
                             delete_specific_row("Schedule", row_num)
                             st.rerun()
