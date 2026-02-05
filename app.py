@@ -3,42 +3,26 @@ import pandas as pd
 import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import json
 import time
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
-
-# --- PASSWORD ---
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS ---
+# --- CSS STYLING ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
-    .stApp {
-        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 53.65L25.65 49.65C10.25 35.45 0 26.05 0 14.55C0 5.15 7.35 -2.2 16.75 -2.2C22.05 -2.2 27.15 4.7 30 10.65C32.85 4.7 37.95 -2.2 43.25 -2.2C52.65 -2.2 60 5.15 60 14.55C60 26.05 49.75 35.45 34.35 49.65L30 53.65Z' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E"),
-        linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
-        background-size: 100px 100px, 400% 400%;
-        animation: gradient 15s ease infinite;
-        font-family: 'Nunito', sans-serif;
-    }
-    @keyframes gradient { 0% { background-position: 0 0, 0% 50%; } 50% { background-position: 0 0, 100% 50%; } 100% { background-position: 0 0, 0% 50%; } }
+    .stApp { background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb); background-size: 400% 400%; animation: gradient 15s ease infinite; font-family: 'Nunito', sans-serif; }
     h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
-    h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
-    .glass-card { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; }
-    div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
-    div[data-baseweb="input"] { background-color: white !important; border-radius: 12px !important; }
-    .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
+    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; }
+    div[data-baseweb="base-input"], input { background-color: white !important; border-radius: 12px !important; color: #5A189A !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
-    .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
-    .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
-    .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
     header, #MainMenu, footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- CONNECTION ---
+# --- CONNECT TO GOOGLE SHEETS ---
 def connect_to_gsheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     try:
@@ -52,27 +36,37 @@ def connect_to_gsheets():
                  key = f"-----BEGIN PRIVATE KEY-----\n{clean_key}\n-----END PRIVATE KEY-----\n"
             creds_dict["private_key"] = key
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-    except:
-        try:
-            creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
-        except:
-            return None
-
-    client = gspread.authorize(creds)
-    
-    if "custom_sheet_id" in st.session_state:
-        SHEET_ID = st.session_state["custom_sheet_id"]
-    else:
-        # ⚠️ YOUR ID HERE ⚠️
+        client = gspread.authorize(creds)
+        
+        # ⚠️ YOUR SHEET ID ⚠️
         SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
-    
-    try:
-        sheet = client.open_by_key(SHEET_ID)
-        return sheet
+        
+        # Override with custom ID if provided
+        if "custom_sheet_id" in st.session_state:
+            SHEET_ID = st.session_state["custom_sheet_id"]
+            
+        return client.open_by_key(SHEET_ID)
     except Exception as e:
+        st.session_state["connection_error"] = str(e)
         return None
 
-# --- DATA FUNCTIONS ---
+# --- ADD ROW FUNCTION (WITH DEBUGGING) ---
+def add_row(worksheet_name, row_data):
+    sheet = connect_to_gsheets()
+    if not sheet:
+        st.error(f"❌ Connection Failed: {st.session_state.get('connection_error', 'Unknown Error')}")
+        return False
+        
+    try:
+        ws = sheet.worksheet(worksheet_name)
+        ws.append_row(row_data)
+        return True
+    except Exception as e:
+        # SHOW THE EXACT ERROR ON SCREEN
+        st.error(f"❌ Failed to save to '{worksheet_name}': {e}")
+        return False
+
+# --- GET DATA FUNCTION (WITH COLUMN CHECKER) ---
 def get_data(worksheet_name):
     sheet = connect_to_gsheets()
     if not sheet: return pd.DataFrame()
@@ -80,23 +74,13 @@ def get_data(worksheet_name):
         ws = sheet.worksheet(worksheet_name)
         data = ws.get_all_records()
         df = pd.DataFrame(data)
+        # Clean columns (remove spaces)
         if not df.empty:
             df.columns = df.columns.str.strip()
         return df
-    except:
-        return pd.DataFrame() 
-
-def add_row(worksheet_name, row_data):
-    sheet = connect_to_gsheets()
-    if not sheet:
-        st.error("❌ Disconnected.")
-        return False
-    try:
-        ws = sheet.worksheet(worksheet_name)
-        ws.append_row(row_data)
-        return True
-    except:
-        return False
+    except Exception as e:
+        st.warning(f"⚠️ Could not read '{worksheet_name}': {e}")
+        return pd.DataFrame()
 
 def delete_row_by_index(worksheet_name, index):
     sheet = connect_to_gsheets()
@@ -111,145 +95,131 @@ def delete_row_by_index(worksheet_name, index):
         except:
             pass
 
-# --- SCREENS ---
-def login_screen():
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center;'>Knock Knock! 🚪</h1>", unsafe_allow_html=True)
-    st.write("") 
-    c1, c2, c3 = st.columns([1, 2, 1]) 
-    with c2:
-        password = st.text_input("Enter the Secret Key:", type="password", placeholder="Shhh...")
-        st.write("") 
-        if st.button("Open Door 🔑", use_container_width=True):
-            if password == SECRET_PASSWORD:
-                st.session_state.authenticated = True
-                st.balloons()
-                st.rerun()
-            else:
-                st.error("Wrong key! Are you a stranger? 😜")
+# --- MAIN APP ---
+def main():
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
 
-def main_app():
-    sheet = connect_to_gsheets()
-    if not sheet:
-        st.markdown("<h2 style='text-align: center; color: red;'>⚠️ Connection Fix Needed</h2>", unsafe_allow_html=True)
-        st.info("The app is currently connected to a Google Tutorial Sheet, not YOUR sheet.")
-        st.markdown("**Paste your REAL Google Sheet ID below:**")
-        new_id = st.text_input("Sheet ID", placeholder="Paste long ID string here...")
-        if st.button("Fix Connection 🔌"):
-            if new_id:
-                st.session_state["custom_sheet_id"] = new_id.strip()
-                st.success("ID Updated! Refreshing...")
-                time.sleep(1)
-                st.rerun()
+    # LOGIN SCREEN
+    if not st.session_state.authenticated:
+        st.markdown("<br><br><h1 style='text-align: center;'>Knock Knock! 🚪</h1>", unsafe_allow_html=True)
+        c1, c2, c3 = st.columns([1, 2, 1])
+        with c2:
+            pwd = st.text_input("Password", type="password")
+            if st.button("Enter"):
+                if pwd == SECRET_PASSWORD:
+                    st.session_state.authenticated = True
+                    st.rerun()
+                else:
+                    st.error("Wrong Password")
         return
 
+    # CONNECTION CHECKER
+    sheet = connect_to_gsheets()
+    if not sheet:
+        st.error("❌ App cannot connect to Google Sheets.")
+        st.write(f"Error details: {st.session_state.get('connection_error')}")
+        new_id = st.text_input("Paste correct Sheet ID here:")
+        if st.button("Update ID"):
+            st.session_state["custom_sheet_id"] = new_id.strip()
+            st.rerun()
+        return
+
+    # APP UI
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
+    
+    # DEBUG EXPANDER (Use this to check columns!)
+    with st.expander("🕵️ Debugging Tools (Open if things break)"):
+        st.write("Current Sheet ID:", sheet.id)
+        tabs = [ws.title for ws in sheet.worksheets()]
+        st.write("Tabs Found:", tabs)
+        if st.button("Test Write Permission"):
+            res = add_row("Notes", ["TEST", "System", "Connection Test"])
+            if res: st.success("Write Successful! (Added a test note)")
+            else: st.error("Write Failed.")
+
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
-        user = st.radio("Who are you?", ["🤴 Aboudii", "👸 Saratii"], horizontal=True, label_visibility="collapsed")
-    st.write("") 
+        user = st.radio("Identity", ["🤴 Aboudii", "👸 Saratii"], horizontal=True, label_visibility="collapsed")
     
-    tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
+    t1, t2, t3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
 
-    with tab1:
+    # TAB 1: SCHEDULE
+    with t1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        with st.expander("➕ Plan a New Date", expanded=False):
-            with st.form("new_event"):
-                c1, c2 = st.columns(2)
-                with c1: event_date = st.date_input("When?")
-                with c2: event_time = st.time_input("Time", value=None)
-                event_name = st.text_input("What is the plan?")
-                st.write("") 
-                if st.form_submit_button("Save to Calendar"):
-                    time_str = event_time.strftime("%H:%M") if event_time else "All Day"
-                    success = add_row("Schedule", [str(event_date), time_str, event_name, user])
-                    if success:
-                        st.toast("Saved!", icon="🎉")
-                        time.sleep(1)
-                        st.rerun()
+        with st.form("add_date"):
+            st.subheader("➕ New Plan")
+            d = st.date_input("When?")
+            t = st.time_input("Time", value=None)
+            what = st.text_input("What?")
+            if st.form_submit_button("Save"):
+                t_str = t.strftime("%H:%M") if t else "All Day"
+                if add_row("Schedule", [str(d), t_str, what, user]):
+                    st.success("Saved!")
+                    time.sleep(1)
+                    st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         df = get_data("Schedule")
         if not df.empty:
-            if "Date" in df.columns:
+            # Check for required columns
+            required = ["Date", "Time", "Event", "Identity"]
+            missing = [c for c in required if c not in df.columns]
+            if missing:
+                st.error(f"❌ Columns missing in 'Schedule' tab: {missing}")
+                st.info(f"Found columns: {list(df.columns)}")
+            else:
                 df['Date'] = pd.to_datetime(df['Date'])
                 df = df.sort_values(by='Date')
-                df['Month'] = df['Date'].dt.strftime('%B')
-                for month, group in df.groupby('Month', sort=False):
-                    st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
-                    for i, row in group.iterrows():
-                        # SAFE MODE: Using .get() prevents crashing if a column is missing
-                        evt = row.get('Event', 'No Title')
-                        time_val = row.get('Time', '')
-                        who = row.get('Identity', '')
-                        icon = '🤴' if 'Husband' in who else '👸'
-                        
-                        st.markdown(f"<div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'><div style='flex-grow: 1;'><div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{evt}</div><div style='font-size: 14px; color: #666;'>⏰ {time_val} • {row['Date'].strftime('%a %d')}</div></div><div style='text-align: right; min-width: 60px;'><div style='font-size: 24px;'>{icon}</div></div></div>", unsafe_allow_html=True)
-            else:
-                 st.error("⚠️ Column 'Date' missing in Schedule tab.")
-        else:
-            st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>✈️</div><h3>Nothing planned yet!</h3></div>", unsafe_allow_html=True)
+                for i, row in df.iterrows():
+                    icon = '🤴' if 'Aboudii' in str(row['Identity']) else '👸'
+                    st.markdown(f"<div class='glass-card' style='padding: 15px; display: flex; justify-content: space-between;'><div><b>{row['Event']}</b><br><small>{row['Date'].strftime('%a %d %b')} • {row['Time']}</small></div><div style='font-size: 24px;'>{icon}</div></div>", unsafe_allow_html=True)
 
-    with tab2:
-        st.markdown('<div class="glass-card" style="padding: 15px;">', unsafe_allow_html=True)
-        c1, c2 = st.columns([4, 1])
-        with c1: new_task = st.text_input("Task", placeholder="Add a new task...", label_visibility="collapsed")
-        with c2: 
-            if st.button("Add"):
-                if new_task:
-                    success = add_row("Tasks", [new_task, "Pending", user, datetime.datetime.now().strftime("%Y-%m-%d")])
-                    if success: st.rerun()
+    # TAB 2: TASKS
+    with t2:
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        col1, col2 = st.columns([3, 1])
+        with col1: new_task = st.text_input("New Task", label_visibility="collapsed")
+        with col2: 
+            if st.button("Add Task"):
+                if add_row("Tasks", [new_task, "Pending", user, str(datetime.date.today())]):
+                    st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         df = get_data("Tasks")
         if not df.empty:
-            if "Task" not in df.columns:
-                st.error(f"⚠️ Column 'Task' missing. Found: {list(df.columns)}")
+            required = ["Task", "Status"]
+            missing = [c for c in required if c not in df.columns]
+            if missing:
+                st.error(f"❌ Columns missing in 'Tasks' tab: {missing}")
             else:
                 for i, row in df.iterrows():
-                    is_done = row.get('Status', '') == "Done"
-                    opacity, icon = ("0.6", "✅") if is_done else ("1.0", "⬜")
-                    decoration = "line-through" if is_done else "none"
-                    col_btn, col_txt = st.columns([1, 5])
-                    with col_btn:
-                        if st.button(icon, key=f"t_{i}"):
-                            delete_row_by_index("Tasks", i)
-                            if not is_done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
-                            st.rerun()
-                    with col_txt:
-                        st.markdown(f"<div style='background: rgba(255,255,255,0.7); border-radius: 15px; padding: 12px; margin-bottom: 5px; opacity: {opacity}; text-decoration: {decoration};'><span style='font-size: 16px; color: #333; font-weight: 600;'>{row['Task']}</span></div>", unsafe_allow_html=True)
-        else:
-             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
+                    done = row['Status'] == "Done"
+                    st.markdown(f"<div style='background: rgba(255,255,255,0.7); padding: 10px; border-radius: 10px; margin-bottom: 5px; text-decoration: {'line-through' if done else 'none'}; opacity: {0.6 if done else 1};'>{row['Task']}</div>", unsafe_allow_html=True)
+                    if st.button("✅ Done" if not done else "🗑️ Delete", key=f"btn_{i}"):
+                        delete_row_by_index("Tasks", i)
+                        if not done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
+                        st.rerun()
 
-    with tab3:
+    # TAB 3: NOTES
+    with t3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        with st.form("love_note"):
-            note = st.text_area("Write a note...", placeholder="I love you because...", height=100)
-            if st.form_submit_button("Post Note ❤️"):
-                success = add_row("Notes", [datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), user, note])
-                if success:
-                    st.toast("Posted!", icon="💌")
+        with st.form("add_note"):
+            n = st.text_area("New Note")
+            if st.form_submit_button("Post"):
+                if add_row("Notes", [str(datetime.datetime.now()), user, n]):
+                    st.success("Posted!")
                     time.sleep(1)
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
         
         df = get_data("Notes")
         if not df.empty:
-            if "Note" in df.columns:
-                df = df.iloc[::-1]
-                for i, row in df.iterrows():
-                    rotation = (i % 5) - 2 
-                    st.markdown(f"<div class='glass-card' style='background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;'><div style='font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;'><span>{row.get('Date','')}</span><span><b>{row.get('Author','')}</b></span></div><div style='font-family: \"Indie Flower\", cursive; font-size: 18px; color: #333; line-height: 1.4;'>{row['Note']}</div></div>", unsafe_allow_html=True)
+            if "Note" not in df.columns:
+                 st.error("❌ Column 'Note' missing in Notes tab.")
             else:
-                 st.error("⚠️ Column 'Note' missing in Notes tab.")
-        else:
-            st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>💌</div><h3>No notes yet.</h3></div>", unsafe_allow_html=True)
+                for i, row in df.iloc[::-1].iterrows():
+                    st.markdown(f"<div class='glass-card' style='background: #fff9c4; color: #333;'>{row['Note']}</div>", unsafe_allow_html=True)
 
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if not st.session_state.authenticated:
-    login_screen()
-else:
-    main_app()
-
+if __name__ == "__main__":
+    main()
