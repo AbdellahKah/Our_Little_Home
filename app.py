@@ -10,70 +10,76 @@ import os
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + Mobile Alignment Fixes) ---
+# --- FANCY CSS (Hearts Theme + Button Fixes) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
 
-    /* 1. BACKGROUND: EXACT HEARTS THEME RESTORED */
+    /* 1. BACKGROUND: HEARTS THEME */
     .stApp {
         background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 53.65L25.65 49.65C10.25 35.45 0 26.05 0 14.55C0 5.15 7.35 -2.2 16.75 -2.2C22.05 -2.2 27.15 4.7 30 10.65C32.85 4.7 37.95 -2.2 43.25 -2.2C52.65 -2.2 60 5.15 60 14.55C60 26.05 49.75 35.45 34.35 49.65L30 53.65Z' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E"),
         url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M25 1C21.7 1 18.9 3.4 18.4 6.6C15.2 5.1 11.5 6.4 9.5 9.5C7.5 12.5 8 16.6 10.7 19.1C7.8 20.6 6.3 23.9 7.1 27.1C7.9 30.4 10.8 32.6 14.1 32.6C14.1 36.1 16.3 38.9 19.6 39.7C22.9 40.4 26.1 39 27.7 36.1C30.4 38.6 34.4 39.1 37.5 37.1C40.6 35.1 41.8 31.4 40.4 28.2C43.6 27.8 46 25 46 21.6C46 18.2 43.6 15.4 40.4 15C41.8 11.8 40.6 8.1 37.5 6.1C34.4 4.1 30.4 4.6 27.7 7.1C27.2 3.9 24.4 1 21.1 1L25 1Z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E"),
         linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
         background-size: 100px 100px, 80px 80px, 400% 400%;
-        background-position: 0 0, 40px 40px, 0% 50%;
         animation: gradient 15s ease infinite;
         font-family: 'Nunito', sans-serif;
     }
     @keyframes gradient {
-        0% { background-position: 0 0, 40px 40px, 0% 50%; }
-        50% { background-position: 0 0, 40px 40px, 100% 50%; }
-        100% { background-position: 0 0, 40px 40px, 0% 50%; }
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
-    h1 { font-family: 'Pacifico', cursive; font-size: 3rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); margin-bottom: 0px; }
+    h1 { font-family: 'Pacifico', cursive; font-size: 2.5rem !important; color: #5A189A !important; text-shadow: 2px 2px 4px rgba(255,255,255,0.4); }
     h3 { font-family: 'Nunito', sans-serif; color: #5A189A !important; font-weight: 700; }
-    .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
     
-    /* INPUT FIXES */
-    div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
-    div[data-baseweb="input"] { background-color: white !important; border-radius: 12px !important; }
-    div[data-baseweb="select"] > div { background-color: white !important; color: #5A189A !important; border-radius: 12px !important; }
-    div[data-baseweb="select"] span { color: #5A189A !important; }
-    .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
-    
-    /* MAIN BUTTONS */
-    div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
-    
-    /* 2. ALIGNMENT FIX: EDIT/DELETE BUTTONS */
-    /* This targets the buttons inside the columns specifically */
-    div[data-testid="column"] {
-        display: flex;
-        align-items: center; /* Vertically center buttons */
-        justify-content: center;
+    .glass-card { 
+        background: rgba(255, 255, 255, 0.7); 
+        backdrop-filter: blur(10px); 
+        border-radius: 20px; 
+        border: 1px solid rgba(255, 255, 255, 0.6); 
+        padding: 15px; 
+        margin-bottom: 10px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
     }
-    
+
+    /* 2. GENERAL BUTTONS (The big pink ones) */
+    div.stButton > button { 
+        background: linear-gradient(90deg, #FF69B4, #DA70D6); 
+        color: white; 
+        border: none; 
+        border-radius: 25px; 
+        height: 50px; 
+        font-size: 18px; 
+        font-weight: bold; 
+        width: 100%; 
+    }
+
+    /* 3. SMALL ACTION BUTTONS (Edit/Delete specific override) */
+    /* This targets buttons inside the 3-column layout to make them small & white */
     div[data-testid="column"] button {
-        background: rgba(255,255,255,0.4) !important;
-        border: 1px solid rgba(255,255,255,0.6) !important;
-        font-size: 18px;
-        padding: 0px;
-        height: 45px;
-        width: 100%;
-        color: #5A189A !important;
-        border-radius: 15px;
-        margin-top: 0px !important; /* Remove top margin so they align */
+        background: rgba(255, 255, 255, 0.6) !important; /* Force transparent white */
+        border: 1px solid rgba(255, 255, 255, 0.9) !important;
+        color: #5A189A !important; /* Purple icon */
+        height: 42px !important;
+        width: 100% !important;
+        border-radius: 12px !important;
+        font-size: 18px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05) !important;
+        margin-top: 10px; /* Aligns visually with text box */
     }
     
     div[data-testid="column"] button:hover {
-        background: rgba(255,255,255,0.8) !important;
+        background: white !important;
+        transform: scale(1.02);
         border-color: #5A189A !important;
     }
 
-    .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
-    .stTabs [data-baseweb="tab"] { height: 40px; border-radius: 40px; background-color: transparent; color: #5A189A; font-weight: 700; border: none; flex-grow: 1; }
-    .stTabs [aria-selected="true"] { background-color: #fff !important; color: #FF69B4 !important; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    /* Input Fields */
+    input, textarea, select { font-size: 16px !important; }
+    div[data-baseweb="input"] { background-color: rgba(255,255,255,0.9) !important; border-radius: 12px !important; }
+
     header, #MainMenu, footer {visibility: hidden;}
     </style>
 """, unsafe_allow_html=True)
@@ -187,15 +193,15 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # --- ROW CONTAINER START ---
+                    # --- ROW LAYOUT ---
                     with st.container():
-                        # Use columns with Ratio [5, 1, 1] to ensure buttons fit side by side
-                        c_text, c_edit, c_del = st.columns([5, 1, 1])
+                        # Using [5, 0.7, 0.7] keeps buttons tight to the text
+                        c_text, c_edit, c_del = st.columns([5, 0.7, 0.7])
                         
                         with c_text:
                             st.markdown(
                                 f"""
-                                <div class='glass-card' style='border-left: 6px solid #5A189A; padding: 12px; margin-bottom: 5px; height: 100%; display: flex; align-items: center;'>
+                                <div class='glass-card' style='border-left: 6px solid #5A189A; padding: 12px; margin-bottom: 5px; min-height: 60px; display: flex; align-items: center;'>
                                     <div style='width: 100%;'>
                                         <div style='font-size: 18px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
                                         <div style='font-size: 13px; color: #666; margin-top: 4px; display: flex; justify-content: space-between;'>
@@ -208,7 +214,7 @@ def main_app():
                                 unsafe_allow_html=True
                             )
                         
-                        # ALIGNMENT: Vertical spacer removed, using CSS flex-center
+                        # Buttons sit in narrow columns
                         with c_edit:
                              if st.button("✏️", key=f"e_{row_num}"):
                                 st.session_state[f"editing_{row_num}"] = not st.session_state.get(f"editing_{row_num}", False)
@@ -217,7 +223,6 @@ def main_app():
                              if st.button("❌", key=f"d_{row_num}"):
                                 delete_specific_row("Schedule", row_num)
                                 st.rerun()
-                    # --- ROW CONTAINER END ---
 
                     # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
@@ -255,7 +260,7 @@ def main_app():
                 txt_deco = "line-through" if is_done else "none"
                 
                 # Checkbox | Text Layout
-                c_check, c_txt = st.columns([1, 5])
+                c_check, c_txt = st.columns([0.8, 5])
                 with c_check:
                     btn_label = "✅" if is_done else "⬜"
                     if st.button(btn_label, key=f"tick_{i}"):
