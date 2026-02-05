@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Final Polish) ---
+# --- FANCY CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -38,12 +38,12 @@ st.markdown("""
         border-radius: 25px;
         border: 1px solid rgba(255, 255, 255, 0.5);
         border-left: 8px solid #5A189A;
+        height: 80px; /* Slightly shorter for tasks */
         width: 100%;
+        margin-bottom: -80px; 
         position: relative;
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        height: 90px;
-        margin-bottom: -90px; /* Pulls content UP */
     }
 
     /* BUTTONS */
@@ -57,55 +57,26 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Secondary (Circle) */
-    /* We target only the small icon buttons */
-    div[data-testid="column"] button:not([kind="primary"]) {
+    /* Secondary (Circle) inside columns */
+    div[data-testid="column"] button:not([kind="primary"]), 
+    div[data-testid="stColumn"] button:not([kind="primary"]) {
         background: rgba(255, 255, 255, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
+        width: 45px !important;
+        height: 45px !important;
         padding: 0 !important;
         color: #5A189A !important;
         margin-top: 10px !important;
-        min-width: 40px !important;
+        min-width: 0px !important;
     }
-    div[data-testid="column"] button:not([kind="primary"]):hover {
+    
+    div[data-testid="column"] button:not([kind="primary"]):hover,
+    div[data-testid="stColumn"] button:not([kind="primary"]):hover {
         background: #fff !important;
         transform: scale(1.1);
         border-color: #FF69B4 !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    /* 🚀 MOBILE FIX: FORCE ROW LAYOUT FOR LISTS */
-    /* Only apply this to rows that have our small buttons (not the login screen) */
-    @media (max-width: 640px) {
-        /* If a row has a non-primary button, force it to be horizontal */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: flex-start !important;
-        }
-        
-        /* Make the text column flexible so it shrinks */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:nth-child(1) {
-            flex: 1 1 auto !important;
-            min-width: 0 !important; 
-            width: auto !important;
-        }
-        
-        /* Make the button columns fixed width */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:not(:first-child) {
-            flex: 0 0 auto !important;
-            width: auto !important;
-            padding-left: 5px !important;
-        }
-        
-        /* Adjust Ghost Card height for mobile */
-        .ghost-card {
-            height: 100px;
-            margin-bottom: -100px;
-        }
     }
 
     /* INPUTS */
@@ -208,6 +179,8 @@ def update_row(worksheet_name, row_number, new_data):
     if sheet:
         try:
             ws = sheet.worksheet(worksheet_name)
+            # Update entire row based on column count
+            # A=1, B=2, C=3, D=4
             cell_range = f"A{row_number}:D{row_number}"
             ws.update(cell_range, [new_data]) 
             return True
@@ -236,6 +209,7 @@ def main_app():
     sheet = connect_to_gsheets()
     if not sheet:
         st.error("⚠️ App cannot connect to Google Sheets.")
+        st.warning("Did you replace 'PASTE_YOUR_REAL_ID_HERE' with your actual Sheet ID in the code?")
         return
 
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
@@ -280,16 +254,14 @@ def main_app():
                     icon = '🤴' if 'Aboudii' in str(row.get('Identity', '')) else '👸'
                     row_num = row['sheet_row']
 
-                    # GHOST CARD
+                    # Ghost Card
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
-                    # Columns: Text (5) | Edit (0.7) | Delete (0.7) | Emoji (0.8)
-                    # We increase the flex ratio of text to ensure it takes space on mobile
                     c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
                         st.markdown(f"""
-                        <div style='padding: 15px 0 0 10px;'>
+                        <div style='padding: 15px 0 0 15px;'>
                             <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
                             <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
                         </div>
@@ -305,11 +277,10 @@ def main_app():
                             st.rerun()
                             
                     with c_emoji:
-                        st.markdown(f"<div style='font-size: 28px; padding-top: 15px; text-align: center;'>{icon}</div>", unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size: 28px; padding-top: 15px;'>{icon}</div>", unsafe_allow_html=True)
                     
-                    st.write("") 
+                    st.write("") # Spacer
 
-                    # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -329,12 +300,13 @@ def main_app():
         else:
             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>✈️</div><h3>Nothing planned yet!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 2: TASKS ---
+    # --- TAB 2: TASKS (UPDATED) ---
     with tab2:
         st.markdown('<div class="glass-card" style="padding: 15px;">', unsafe_allow_html=True)
         c1, c2 = st.columns([4, 1])
         with c1: new_task = st.text_input("Task", placeholder="Add a new task...", label_visibility="collapsed")
         with c2: 
+            # FIXED: Primary button so it stays rectangular
             if st.button("Add", type="primary"):
                 if new_task:
                     success = add_row("Tasks", [new_task, "Pending", user, datetime.datetime.now().strftime("%Y-%m-%d")])
@@ -344,6 +316,7 @@ def main_app():
         
         df = get_data("Tasks")
         if not df.empty and "Task" in df.columns:
+            # Add sheet row tracking
             df['sheet_row'] = df.index + 2
             
             for i, row in df.iterrows():
@@ -353,11 +326,14 @@ def main_app():
                 status_icon = "↩️" if is_done else "⬜"
                 row_num = row['sheet_row']
 
+                # Ghost Card Pattern
                 st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                 
+                # Layout: [Status Button | Text | Edit | Delete]
                 c_status, c_text, c_edit, c_del = st.columns([0.8, 5, 0.7, 0.7])
                 
                 with c_status:
+                    # Toggle Status
                     if st.button(status_icon, key=f"stat_{row_num}", help="Mark done/undo"):
                         new_status = "Pending" if is_done else "Done"
                         update_row("Tasks", row_num, [row['Task'], new_status, row['Author'], row['Date']])
@@ -379,8 +355,9 @@ def main_app():
                         delete_specific_row("Tasks", row_num)
                         st.rerun()
 
-                st.write("") 
+                st.write("") # Spacer
 
+                # Edit Task Form
                 if st.session_state.get(f"editing_t_{row_num}"):
                     with st.form(key=f"edit_task_form_{row_num}"):
                         st.caption(f"Editing: {row['Task']}")
@@ -393,7 +370,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 3: NOTES (REVERTED TO YELLOW NOTES) ---
+    # --- TAB 3: NOTES ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
