@@ -9,12 +9,12 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + Fixed Button Position) ---
+# --- FANCY CSS (Hearts & Flowers + FORCE LIFT Buttons) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
 
-    /* BACKGROUND: Hearts + Flowers + Gradient */
+    /* BACKGROUND */
     .stApp {
         background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 53.65L25.65 49.65C10.25 35.45 0 26.05 0 14.55C0 5.15 7.35 -2.2 16.75 -2.2C22.05 -2.2 27.15 4.7 30 10.65C32.85 4.7 37.95 -2.2 43.25 -2.2C52.65 -2.2 60 5.15 60 14.55C60 26.05 49.75 35.45 34.35 49.65L30 53.65Z' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E"),
         url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M25 1C21.7 1 18.9 3.4 18.4 6.6C15.2 5.1 11.5 6.4 9.5 9.5C7.5 12.5 8 16.6 10.7 19.1C7.8 20.6 6.3 23.9 7.1 27.1C7.9 30.4 10.8 32.6 14.1 32.6C14.1 36.1 16.3 38.9 19.6 39.7C22.9 40.4 26.1 39 27.7 36.1C30.4 38.6 34.4 39.1 37.5 37.1C40.6 35.1 41.8 31.4 40.4 28.2C43.6 27.8 46 25 46 21.6C46 18.2 43.6 15.4 40.4 15C41.8 11.8 40.6 8.1 37.5 6.1C34.4 4.1 30.4 4.6 27.7 7.1C27.2 3.9 24.4 1 21.1 1L25 1Z' fill='%23ffffff' fill-opacity='0.1'/%3E%3C/svg%3E"),
@@ -44,10 +44,10 @@ st.markdown("""
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     
-    /* --- MAGIC BUTTONS (Fixed Positioning) --- */
-    /* We increase the negative translateY to pull them UP into the box */
+    /* --- MAGIC BUTTONS (FORCE LIFT) --- */
+    /* Target buttons in the 2nd and 3rd column (Edit/Delete) */
     div[data-testid="column"]:nth-of-type(n+2) button {
-        background: rgba(255, 255, 255, 0.6) !important; /* Slightly more opaque */
+        background: rgba(255, 255, 255, 0.6) !important;
         backdrop-filter: blur(5px);
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
@@ -59,13 +59,14 @@ st.markdown("""
         color: #5A189A !important;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         
-        /* UPDATED: Increased lift to -90px to get inside the box */
-        transform: translateY(-90px); 
-        z-index: 100; /* Ensure it sits ON TOP of the card */
-        margin-top: 0px !important;
+        /* 🚀 THE FIX: Aggressive lift + Margin Fix */
+        transform: translateY(-130px) !important; 
+        margin-bottom: -100px !important; /* Prevents huge gap below */
+        z-index: 99 !important; /* Stays on top */
     }
+    
     div[data-testid="column"]:nth-of-type(n+2) button:hover {
-        transform: translateY(-93px) scale(1.1); /* Keep the lift on hover */
+        transform: translateY(-133px) scale(1.1) !important;
         background: #fff !important;
         border-color: #FF69B4 !important;
     }
@@ -98,9 +99,7 @@ def connect_to_gsheets():
             return None
 
     client = gspread.authorize(creds)
-    
     SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
-    
     try:
         sheet = client.open_by_key(SHEET_ID)
         return sheet
@@ -237,7 +236,6 @@ def main_app():
                     row_num = row['sheet_row']
 
                     # 1. RENDER HTML CARD
-                    # Gap is preserved to let buttons sit there
                     st.markdown(
                         f"""
                         <div class='glass-card' style='border-left: 8px solid #5A189A; display: flex; align-items: center; justify-content: space-between; height: 90px;'>
@@ -245,14 +243,14 @@ def main_app():
                                 <div style='font-size: 20px; font-weight: bold; color: #5A189A; line-height: 1.2;'>{row.get('Event', 'Date')}</div>
                                 <div style='font-size: 14px; color: #666; margin-top: 4px;'>⏰ {row.get('Time', '')} • {row['Date'].strftime('%a %d')}</div>
                             </div>
-                            <div style='min-width: 110px;'></div> <div style='font-size: 28px;'>{icon}</div>
+                            <div style='min-width: 120px;'></div> <div style='font-size: 28px;'>{icon}</div>
                         </div>
                         """, 
                         unsafe_allow_html=True
                     )
 
-                    # 2. RENDER BUTTONS (Float into the gap)
-                    # Increased lift ensures they go INSIDE the box
+                    # 2. RENDER BUTTONS (Lifted Up)
+                    # Note: We use empty spacer columns to align buttons to the right-ish area
                     c_spacer, c_edit, c_del, c_end = st.columns([5.5, 0.6, 0.6, 1])
                     
                     with c_edit:
