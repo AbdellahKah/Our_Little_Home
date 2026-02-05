@@ -87,7 +87,7 @@ def connect_to_gsheets():
     client = gspread.authorize(creds)
     
     # 👇👇👇 PASTE YOUR REAL ID BELOW (Inside the quotes!) 👇👇👇
-    SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+    SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
     # 👆👆👆 REPLACE THE TEXT ABOVE WITH YOUR LONG ID 👆👆👆
     
     try:
@@ -354,4 +354,5 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
+
 
