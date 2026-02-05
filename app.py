@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + ANTI-SQUASH MOBILE FIX) ---
+# --- FANCY CSS (Final Polish) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -31,7 +31,7 @@ st.markdown("""
     /* CARD STYLES */
     .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-    /* GHOST CARD (Background) */
+    /* GHOST CARD */
     .ghost-card {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(12px);
@@ -42,49 +42,8 @@ st.markdown("""
         position: relative;
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        
-        /* Height setup for layout */
-        height: 100px;
-        margin-bottom: -100px; 
-    }
-
-    /* 🚀 MOBILE FIX: FORCE HORIZONTAL + PREVENT SQUASHING */
-    @media (max-width: 640px) {
-        /* 1. Force the row to stay horizontal (no stacking!) */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            overflow-x: auto !important; /* Allow scrolling if needed */
-            align-items: center !important;
-        }
-        
-        /* 2. THE TEXT COLUMN: Force it to be wide (Anti-Squash) */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:not(:has(button)) {
-            flex: 1 0 auto !important; /* Grow freely, do not shrink below base */
-            width: auto !important;
-            min-width: 65% !important; /* 🛡️ FORCE 65% WIDTH 🛡️ */
-        }
-        
-        /* 3. THE BUTTON COLUMNS: Force fixed size */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:has(button) {
-            flex: 0 0 auto !important;
-            width: 42px !important;
-            min-width: 42px !important;
-            padding: 0 2px !important;
-        }
-
-        /* 4. THE EMOJI COLUMN */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:last-child:not(:has(button)) {
-            flex: 0 0 auto !important;
-            width: 35px !important;
-            min-width: 35px !important;
-        }
-        
-        /* Adjust Ghost Card height slightly for mobile */
-        .ghost-card {
-            height: 90px;
-            margin-bottom: -90px;
-        }
+        height: 90px;
+        margin-bottom: -90px; /* Pulls content UP */
     }
 
     /* BUTTONS */
@@ -98,9 +57,9 @@ st.markdown("""
         border: none !important;
     }
 
-    /* Secondary (Circle) inside columns */
-    div[data-testid="column"] button:not([kind="primary"]), 
-    div[data-testid="stColumn"] button:not([kind="primary"]) {
+    /* Secondary (Circle) */
+    /* We target only the small icon buttons */
+    div[data-testid="column"] button:not([kind="primary"]) {
         background: rgba(255, 255, 255, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
@@ -111,12 +70,42 @@ st.markdown("""
         margin-top: 10px !important;
         min-width: 40px !important;
     }
-    
     div[data-testid="column"] button:not([kind="primary"]):hover {
         background: #fff !important;
         transform: scale(1.1);
         border-color: #FF69B4 !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* 🚀 MOBILE FIX: FORCE ROW LAYOUT FOR LISTS */
+    /* Only apply this to rows that have our small buttons (not the login screen) */
+    @media (max-width: 640px) {
+        /* If a row has a non-primary button, force it to be horizontal */
+        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: flex-start !important;
+        }
+        
+        /* Make the text column flexible so it shrinks */
+        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:nth-child(1) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important; 
+            width: auto !important;
+        }
+        
+        /* Make the button columns fixed width */
+        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:not(:first-child) {
+            flex: 0 0 auto !important;
+            width: auto !important;
+            padding-left: 5px !important;
+        }
+        
+        /* Adjust Ghost Card height for mobile */
+        .ghost-card {
+            height: 100px;
+            margin-bottom: -100px;
+        }
     }
 
     /* INPUTS */
@@ -295,6 +284,7 @@ def main_app():
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
                     # Columns: Text (5) | Edit (0.7) | Delete (0.7) | Emoji (0.8)
+                    # We increase the flex ratio of text to ensure it takes space on mobile
                     c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
@@ -363,7 +353,6 @@ def main_app():
                 status_icon = "↩️" if is_done else "⬜"
                 row_num = row['sheet_row']
 
-                # Ghost Card Pattern
                 st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                 
                 c_status, c_text, c_edit, c_del = st.columns([0.8, 5, 0.7, 0.7])
@@ -390,7 +379,7 @@ def main_app():
                         delete_specific_row("Tasks", row_num)
                         st.rerun()
 
-                st.write("") # Spacer
+                st.write("") 
 
                 if st.session_state.get(f"editing_t_{row_num}"):
                     with st.form(key=f"edit_task_form_{row_num}"):
@@ -404,7 +393,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 3: NOTES (Classic Yellow) ---
+    # --- TAB 3: NOTES (REVERTED TO YELLOW NOTES) ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
