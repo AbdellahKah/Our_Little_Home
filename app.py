@@ -20,7 +20,6 @@ st.markdown("""
         background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 53.65L25.65 49.65C10.25 35.45 0 26.05 0 14.55C0 5.15 7.35 -2.2 16.75 -2.2C22.05 -2.2 27.15 4.7 30 10.65C32.85 4.7 37.95 -2.2 43.25 -2.2C52.65 -2.2 60 5.15 60 14.55C60 26.05 49.75 35.45 34.35 49.65L30 53.65Z' fill='%23ffffff' fill-opacity='0.15'/%3E%3C/svg%3E"),
         linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb);
         background-size: 100px 100px, 400% 400%;
-        background-position: 0 0, 0% 50%;
         animation: gradient 15s ease infinite;
         font-family: 'Nunito', sans-serif;
     }
@@ -30,8 +29,6 @@ st.markdown("""
     .glass-card { background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 25px; margin-bottom: 20px; }
     div[data-baseweb="base-input"], input.st-be, input.st-bf, input.st-bg { background-color: white !important; border: 2px solid rgba(255,255,255,0.8) !important; border-radius: 12px !important; color: #5A189A !important; }
     div[data-baseweb="input"] { background-color: white !important; border-radius: 12px !important; }
-    div[data-baseweb="select"] > div { background-color: white !important; color: #5A189A !important; border-radius: 12px !important; }
-    div[data-baseweb="select"] span { color: #5A189A !important; }
     .streamlit-expanderHeader { background-color: rgba(255,255,255,0.6) !important; color: #5A189A !important; border-radius: 12px !important; }
     div.stButton > button { background: linear-gradient(90deg, #FF69B4, #DA70D6) !important; color: white !important; border: none !important; border-radius: 25px; height: 50px; font-size: 18px; font-weight: bold; width: 100%; }
     .stTabs [data-baseweb="tab-list"] { background-color: rgba(255,255,255,0.4); border-radius: 50px; padding: 8px; gap: 10px; margin-bottom: 20px; }
@@ -63,12 +60,11 @@ def connect_to_gsheets():
 
     client = gspread.authorize(creds)
     
-    # 1. Check if user provided a custom ID in the app
     if "custom_sheet_id" in st.session_state:
         SHEET_ID = st.session_state["custom_sheet_id"]
     else:
-        # Default placeholder (This is the one causing the error!)
-        SHEET_ID = "1y04dfrk53yPCm0MNU0OdiUMZlr41GhhxtXfgVDsBuoQ"
+        # ⚠️ YOUR ID HERE ⚠️
+        SHEET_ID = "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
     
     try:
         sheet = client.open_by_key(SHEET_ID)
@@ -83,7 +79,10 @@ def get_data(worksheet_name):
     try:
         ws = sheet.worksheet(worksheet_name)
         data = ws.get_all_records()
-        return pd.DataFrame(data)
+        df = pd.DataFrame(data)
+        if not df.empty:
+            df.columns = df.columns.str.strip()
+        return df
     except:
         return pd.DataFrame() 
 
@@ -130,41 +129,24 @@ def login_screen():
                 st.error("Wrong key! Are you a stranger? 😜")
 
 def main_app():
-    # --- AUTO-FIX LOGIC ---
-    # Check if we are connected to the wrong sheet
     sheet = connect_to_gsheets()
-    is_wrong_sheet = False
-    
-    if sheet:
-        try:
-            tabs = [ws.title for ws in sheet.worksheets()]
-            if "Class Data" in tabs: # This detects the Google Tutorial Sheet
-                is_wrong_sheet = True
-        except:
-            pass
-    
-    if is_wrong_sheet or not sheet:
+    if not sheet:
         st.markdown("<h2 style='text-align: center; color: red;'>⚠️ Connection Fix Needed</h2>", unsafe_allow_html=True)
         st.info("The app is currently connected to a Google Tutorial Sheet, not YOUR sheet.")
-        
         st.markdown("**Paste your REAL Google Sheet ID below:**")
-        st.markdown("*(You can find it in your browser URL: .../d/**ID_IS_HERE**/edit...)*")
-        
         new_id = st.text_input("Sheet ID", placeholder="Paste long ID string here...")
-        
         if st.button("Fix Connection 🔌"):
             if new_id:
                 st.session_state["custom_sheet_id"] = new_id.strip()
                 st.success("ID Updated! Refreshing...")
                 time.sleep(1)
                 st.rerun()
-        return # Stop loading the rest of the app until fixed
+        return
 
-    # --- NORMAL APP ---
     st.markdown("<h1 style='text-align: center;'>Our Forever Home 🏡</h1>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns([1, 4, 1])
     with c2:
-        user = st.radio("Who are you?", ["🤴 Aboudii", "👸 Saratii"], horizontal=True, label_visibility="collapsed")
+        user = st.radio("Who are you?", ["🤴 Husband", "👸 Wife"], horizontal=True, label_visibility="collapsed")
     st.write("") 
     
     tab1, tab2, tab3 = st.tabs(["📅 Dates", "✅ Tasks", "💌 Notes"])
@@ -186,15 +168,25 @@ def main_app():
                         time.sleep(1)
                         st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+        
         df = get_data("Schedule")
         if not df.empty:
-            df['Date'] = pd.to_datetime(df['Date'])
-            df = df.sort_values(by='Date')
-            df['Month'] = df['Date'].dt.strftime('%B')
-            for month, group in df.groupby('Month', sort=False):
-                st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
-                for i, row in group.iterrows():
-                    st.markdown(f"<div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'><div style='flex-grow: 1;'><div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{row['Event']}</div><div style='font-size: 14px; color: #666;'>⏰ {row['Time']} • {row['Date'].strftime('%a %d')}</div></div><div style='text-align: right; min-width: 60px;'><div style='font-size: 24px;'>{'🤴' if 'Husband' in row['Identity'] else '👸'}</div></div></div>", unsafe_allow_html=True)
+            if "Date" in df.columns:
+                df['Date'] = pd.to_datetime(df['Date'])
+                df = df.sort_values(by='Date')
+                df['Month'] = df['Date'].dt.strftime('%B')
+                for month, group in df.groupby('Month', sort=False):
+                    st.markdown(f"<h3 style='margin: 20px 0 10px 0;'>{month}</h3>", unsafe_allow_html=True)
+                    for i, row in group.iterrows():
+                        # SAFE MODE: Using .get() prevents crashing if a column is missing
+                        evt = row.get('Event', 'No Title')
+                        time_val = row.get('Time', '')
+                        who = row.get('Identity', '')
+                        icon = '🤴' if 'Husband' in who else '👸'
+                        
+                        st.markdown(f"<div class='glass-card' style='border-left: 8px solid #5A189A; padding: 15px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'><div style='flex-grow: 1;'><div style='font-size: 20px; font-weight: bold; color: #5A189A;'>{evt}</div><div style='font-size: 14px; color: #666;'>⏰ {time_val} • {row['Date'].strftime('%a %d')}</div></div><div style='text-align: right; min-width: 60px;'><div style='font-size: 24px;'>{icon}</div></div></div>", unsafe_allow_html=True)
+            else:
+                 st.error("⚠️ Column 'Date' missing in Schedule tab.")
         else:
             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>✈️</div><h3>Nothing planned yet!</h3></div>", unsafe_allow_html=True)
 
@@ -208,20 +200,24 @@ def main_app():
                     success = add_row("Tasks", [new_task, "Pending", user, datetime.datetime.now().strftime("%Y-%m-%d")])
                     if success: st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+        
         df = get_data("Tasks")
         if not df.empty:
-            for i, row in df.iterrows():
-                is_done = row['Status'] == "Done"
-                opacity, icon = ("0.6", "✅") if is_done else ("1.0", "⬜")
-                decoration = "line-through" if is_done else "none"
-                col_btn, col_txt = st.columns([1, 5])
-                with col_btn:
-                    if st.button(icon, key=f"t_{i}"):
-                        delete_row_by_index("Tasks", i)
-                        if not is_done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
-                        st.rerun()
-                with col_txt:
-                    st.markdown(f"<div style='background: rgba(255,255,255,0.7); border-radius: 15px; padding: 12px; margin-bottom: 5px; opacity: {opacity}; text-decoration: {decoration};'><span style='font-size: 16px; color: #333; font-weight: 600;'>{row['Task']}</span></div>", unsafe_allow_html=True)
+            if "Task" not in df.columns:
+                st.error(f"⚠️ Column 'Task' missing. Found: {list(df.columns)}")
+            else:
+                for i, row in df.iterrows():
+                    is_done = row.get('Status', '') == "Done"
+                    opacity, icon = ("0.6", "✅") if is_done else ("1.0", "⬜")
+                    decoration = "line-through" if is_done else "none"
+                    col_btn, col_txt = st.columns([1, 5])
+                    with col_btn:
+                        if st.button(icon, key=f"t_{i}"):
+                            delete_row_by_index("Tasks", i)
+                            if not is_done: add_row("Tasks", [row['Task'], "Done", row['Author'], row['Date']])
+                            st.rerun()
+                    with col_txt:
+                        st.markdown(f"<div style='background: rgba(255,255,255,0.7); border-radius: 15px; padding: 12px; margin-bottom: 5px; opacity: {opacity}; text-decoration: {decoration};'><span style='font-size: 16px; color: #333; font-weight: 600;'>{row['Task']}</span></div>", unsafe_allow_html=True)
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
@@ -236,12 +232,16 @@ def main_app():
                     time.sleep(1)
                     st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+        
         df = get_data("Notes")
         if not df.empty:
-            df = df.iloc[::-1]
-            for i, row in df.iterrows():
-                rotation = (i % 5) - 2 
-                st.markdown(f"<div class='glass-card' style='background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;'><div style='font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;'><span>{row['Date']}</span><span><b>{row['Author']}</b></span></div><div style='font-family: \"Indie Flower\", cursive; font-size: 18px; color: #333; line-height: 1.4;'>{row['Note']}</div></div>", unsafe_allow_html=True)
+            if "Note" in df.columns:
+                df = df.iloc[::-1]
+                for i, row in df.iterrows():
+                    rotation = (i % 5) - 2 
+                    st.markdown(f"<div class='glass-card' style='background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;'><div style='font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;'><span>{row.get('Date','')}</span><span><b>{row.get('Author','')}</b></span></div><div style='font-family: \"Indie Flower\", cursive; font-size: 18px; color: #333; line-height: 1.4;'>{row['Note']}</div></div>", unsafe_allow_html=True)
+            else:
+                 st.error("⚠️ Column 'Note' missing in Notes tab.")
         else:
             st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>💌</div><h3>No notes yet.</h3></div>", unsafe_allow_html=True)
 
@@ -252,4 +252,3 @@ if not st.session_state.authenticated:
     login_screen()
 else:
     main_app()
-
