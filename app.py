@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + SMART MOBILE LAYOUT) ---
+# --- FANCY CSS (Hearts & Flowers + ANTI-SQUASH MOBILE FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -48,39 +48,39 @@ st.markdown("""
         margin-bottom: -100px; 
     }
 
-    /* 🚀 SMART MOBILE LAYOUT ENGINE */
+    /* 🚀 MOBILE FIX: FORCE HORIZONTAL + PREVENT SQUASHING */
     @media (max-width: 640px) {
-        /* 1. Target ONLY rows that have our small secondary buttons (Lists) */
-        /* This prevents breaking the Login page or Add buttons */
+        /* 1. Force the row to stay horizontal (no stacking!) */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
+            overflow-x: auto !important; /* Allow scrolling if needed */
             align-items: center !important;
         }
         
-        /* 2. The Text Column (Any column WITHOUT a button) gets all the space */
+        /* 2. THE TEXT COLUMN: Force it to be wide (Anti-Squash) */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:not(:has(button)) {
-            flex: 1 1 auto !important;
+            flex: 1 0 auto !important; /* Grow freely, do not shrink below base */
             width: auto !important;
-            min-width: 50px !important; /* Stop it from shrinking to 0 */
+            min-width: 65% !important; /* 🛡️ FORCE 65% WIDTH 🛡️ */
         }
         
-        /* 3. The Button Columns (Any column WITH a button) gets fixed width */
+        /* 3. THE BUTTON COLUMNS: Force fixed size */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:has(button) {
             flex: 0 0 auto !important;
-            width: 45px !important;
-            min-width: 45px !important;
-            padding: 0 !important;
+            width: 42px !important;
+            min-width: 42px !important;
+            padding: 0 2px !important;
         }
 
-        /* 4. The Emoji Column (Dates tab only - usually the last one) */
-        /* We force the last column to be fixed width if it has no button */
+        /* 4. THE EMOJI COLUMN */
         div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div[data-testid="column"]:last-child:not(:has(button)) {
             flex: 0 0 auto !important;
-            width: 40px !important;
+            width: 35px !important;
+            min-width: 35px !important;
         }
         
-        /* Adjust Ghost Card height slightly for mobile comfort */
+        /* Adjust Ghost Card height slightly for mobile */
         .ghost-card {
             height: 90px;
             margin-bottom: -90px;
@@ -99,7 +99,8 @@ st.markdown("""
     }
 
     /* Secondary (Circle) inside columns */
-    div[data-testid="column"] button:not([kind="primary"]) {
+    div[data-testid="column"] button:not([kind="primary"]), 
+    div[data-testid="stColumn"] button:not([kind="primary"]) {
         background: rgba(255, 255, 255, 0.5) !important;
         border: 1px solid rgba(255, 255, 255, 0.8) !important;
         border-radius: 50% !important;
@@ -218,7 +219,6 @@ def update_row(worksheet_name, row_number, new_data):
     if sheet:
         try:
             ws = sheet.worksheet(worksheet_name)
-            # Standard A-D range for Dates/Tasks
             cell_range = f"A{row_number}:D{row_number}"
             ws.update(cell_range, [new_data]) 
             return True
@@ -235,7 +235,6 @@ def login_screen():
     with c2:
         password = st.text_input("Enter the Secret Key:", type="password", placeholder="Shhh...")
         st.write("") 
-        # IMPORTANT: type="primary" keeps this button RECTANGULAR
         if st.button("Open Door 🔑", type="primary", use_container_width=True):
             if password == SECRET_PASSWORD:
                 st.session_state.authenticated = True
@@ -405,7 +404,7 @@ def main_app():
         else:
              st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>☕</div><h3>All caught up!</h3></div>", unsafe_allow_html=True)
 
-    # --- TAB 3: NOTES (REVERTED) ---
+    # --- TAB 3: NOTES (Classic Yellow) ---
     with tab3:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         with st.form("love_note"):
