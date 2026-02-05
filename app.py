@@ -9,7 +9,7 @@ import time
 st.set_page_config(page_title="Our Forever Home", page_icon="🏡", layout="centered")
 SECRET_PASSWORD = "1808"
 
-# --- FANCY CSS (Hearts & Flowers + MOBILE ROW FORCE FIX) ---
+# --- FANCY CSS (Hearts & Flowers + MOBILE ROW FIX) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Pacifico&display=swap');
@@ -31,7 +31,7 @@ st.markdown("""
     /* CARD STYLES */
     .glass-card { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(12px); border-radius: 25px; border: 1px solid rgba(255, 255, 255, 0.5); padding: 20px; margin-bottom: 20px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05); }
 
-    /* GHOST CARD */
+    /* GHOST CARD (Responsive Background) */
     .ghost-card {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(12px);
@@ -42,37 +42,32 @@ st.markdown("""
         position: relative;
         z-index: 0;
         box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        
+        /* Height setup for layout */
         height: 100px;
-        margin-bottom: -100px; /* Pulls content UP */
+        margin-bottom: -100px; 
     }
 
-    /* 🚀 MOBILE FIX: FORCE HORIZONTAL ROW FOR LIST ITEMS */
-    /* This targets only the rows that have the small secondary buttons */
+    /* 🚀 MOBILE FIX: FORCE HORIZONTAL LAYOUT */
     @media (max-width: 640px) {
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) {
+        /* Force columns to stay side-by-side on phone */
+        [data-testid="stHorizontalBlock"] {
             flex-direction: row !important;
             flex-wrap: nowrap !important;
             align-items: center !important;
-            gap: 2px !important;
         }
         
-        /* Force Text Column to shrink */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:nth-child(1) {
+        /* Allow text column to shrink so buttons fit */
+        [data-testid="column"] {
+            min-width: 0px !important;
+            width: auto !important;
             flex: 1 1 auto !important;
-            min-width: 0 !important;
-            width: 0 !important;
         }
         
-        /* Force Buttons to stay fixed size */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:not(:first-child) {
+        /* Keep buttons fixed size */
+        [data-testid="column"]:has(button) {
             flex: 0 0 auto !important;
             width: auto !important;
-        }
-        
-        /* Hide emoji on very small screens if needed, or keep small */
-        div[data-testid="stHorizontalBlock"]:has(button:not([kind="primary"])) > div:last-child {
-            display: flex !important;
-            justify-content: center !important;
         }
     }
 
@@ -285,7 +280,8 @@ def main_app():
                     # GHOST CARD
                     st.markdown("<div class='ghost-card'></div>", unsafe_allow_html=True)
                     
-                    # Layout: Text (5) | Edit (0.7) | Delete (0.7) | Emoji (0.8)
+                    # Columns: Text (flexible) | Edit | Delete | Emoji
+                    # On mobile, CSS forces these to stay side-by-side
                     c_text, c_edit, c_del, c_emoji = st.columns([5, 0.7, 0.7, 0.8])
                     
                     with c_text:
@@ -308,8 +304,9 @@ def main_app():
                     with c_emoji:
                         st.markdown(f"<div style='font-size: 28px; padding-top: 15px;'>{icon}</div>", unsafe_allow_html=True)
                     
-                    st.write("") # Spacer
+                    st.write("") # Spacer for next row
 
+                    # Edit Form
                     if st.session_state.get(f"editing_{row_num}"):
                         with st.form(key=f"edit_form_{row_num}"):
                             st.caption(f"Editing: {row['Event']}")
@@ -412,4 +409,15 @@ def main_app():
             df = df.iloc[::-1]
             for i, row in df.iterrows():
                 rotation = (i % 5) - 2 
-                st.markdown(f"<div class='glass-card' style='background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;'><div style='font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;'><span>{row.get('Date','')}</span><span><b>{row.get('Author','')}</b></span></div><div style='font-family: \"Indie Flower\", cursive; font-size: 18px; color: #333; line-height: 1.4;'>{row['Note']}</div></div>", unsafe_
+                # !!! THIS WAS THE ERROR LINE: PARENTHESIS CLOSED CORRECTLY NOW !!!
+                st.markdown(f"<div class='glass-card' style='background: #fff9c4; transform: rotate({rotation}deg); border: none; margin-bottom: 25px;'><div style='font-size: 12px; color: #888; margin-bottom: 8px; display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding-bottom: 5px;'><span>{row.get('Date','')}</span><span><b>{row.get('Author','')}</b></span></div><div style='font-family: \"Indie Flower\", cursive; font-size: 18px; color: #333; line-height: 1.4;'>{row['Note']}</div></div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div style='text-align: center; padding: 40px; opacity: 0.7;'><div style='font-size: 60px;'>💌</div><h3>No notes yet.</h3></div>", unsafe_allow_html=True)
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    login_screen()
+else:
+    main_app()
